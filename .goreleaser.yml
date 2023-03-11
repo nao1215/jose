@@ -1,0 +1,47 @@
+project_name: josex
+env:
+  - GO111MODULE=on
+before:
+  hooks:
+    - go mod tidy
+    #- go generate ./...
+builds:
+  - main: .
+    ldflags:
+      - -s -w -X 'github.com/nao1215/josex/cmd.Version=v{{ .Version }}'
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+archives:
+  - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+    format_overrides:
+      - goos: windows
+        format: zip
+checksum:
+  name_template: "checksums.txt"
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+nfpms:
+  - maintainer: Naohiro CHIKAMATSU <n.chika156@gmail.com>
+    description: josex - calculate PR lead time statistics on GitHub
+    homepage: https://github.com/nao1215/josex
+    license: MIT License
+    formats:
+      - deb
+      - rpm
+      - apk
