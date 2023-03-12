@@ -7,8 +7,8 @@ import (
 
 func newRootCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "josex",
-		Short: "",
+		Use:   "josec",
+		Short: "josec is toolset for JSON Object Signing and Encryption (JOSE).",
 	}
 }
 
@@ -21,6 +21,7 @@ func Execute() int {
 
 	rootCmd.AddCommand(newVersionCmd())
 	rootCmd.AddCommand(newCompletionCmd())
+	rootCmd.AddCommand(newJwkCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Error(err)

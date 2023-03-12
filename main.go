@@ -4,7 +4,7 @@ package main
 import (
 	"os"
 
-	"github.com/nao1215/josex/cmd"
+	"github.com/nao1215/josec/cmd"
 )
 
 // osExit is wrapper for  os.Exit(). It's for unit test.
