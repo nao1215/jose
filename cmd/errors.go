@@ -17,7 +17,7 @@ var (
 	ErrGenerateRSA           = errors.New("failed to generate RSA private key")
 	ErrGenertateECDSA        = errors.New("failed to generate ECDSA private key")
 	ErrGenerateEd25519       = errors.New("failed to generate ed25519 private key")
-	ErrGenerateX25519        = errors.New("failed to generate X5519 private key")
+	ErrGenerateX25519        = errors.New("failed to generate X25519 private key")
 	ErrGeneratePublicKey     = errors.New("failed to generate public keys")
 	ErrGenerateJWKFromRawKey = errors.New("failed to generate new JWK from raw key")
 )

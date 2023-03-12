@@ -7,8 +7,8 @@ import (
 
 func newRootCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "josex",
-		Short: "josex is toolset for JSON Object Signing and Encryption (JOSE).",
+		Use:   "josec",
+		Short: "josec is toolset for JSON Object Signing and Encryption (JOSE).",
 	}
 }
 

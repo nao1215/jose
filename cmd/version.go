@@ -11,10 +11,10 @@ var (
 	// Version value is set by ldflags
 	Version string //nolint
 	// Name is cli command name
-	Name = "josex" //nolint
+	Name = "josec" //nolint
 )
 
-// getVersion return josex command version.
+// getVersion return josec command version.
 // Version global variable is set by ldflags.
 func getVersion(cmd *cobra.Command, args []string) {
 	version := "unknown"
