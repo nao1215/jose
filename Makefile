@@ -1,6 +1,6 @@
 .PHONY: build test clean
 
-APP         = josec
+APP         = jose
 VERSION     = $(shell git describe --tags --abbrev=0)
 GO          = go
 GO_BUILD    = $(GO) build
@@ -10,7 +10,7 @@ GOOS        = ""
 GOARCH      = ""
 GO_PKGROOT  = ./...
 GO_PACKAGES = $(shell $(GO_LIST) $(GO_PKGROOT))
-GO_LDFLAGS  = -ldflags '-X github.com/nao1215/josec/cmd.Version=${VERSION}'
+GO_LDFLAGS  = -ldflags '-X github.com/nao1215/jose/cmd.Version=${VERSION}'
 
 build:  ## Build binary
 	env GO111MODULE=on GOOS=$(GOOS) GOARCH=$(GOARCH) $(GO_BUILD) $(GO_LDFLAGS) -o $(APP) main.go

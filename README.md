@@ -1,2 +1,2 @@
-# josec
-josec - CLI tool for JOSE ( JSON Object Signing and Encryption)
+# jose
+jose - CLI tool for JOSE ( JSON Object Signing and Encryption)

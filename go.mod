@@ -1,4 +1,4 @@
-module github.com/nao1215/josec
+module github.com/nao1215/jose
 
 go 1.20
 
