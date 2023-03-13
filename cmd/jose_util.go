@@ -40,6 +40,5 @@ func availableCurves() []string {
 	for _, v := range jwk.AvailableCurves() {
 		curves = append(curves, v.Params().Name)
 	}
-
 	return curves
 }
