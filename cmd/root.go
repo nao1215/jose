@@ -6,22 +6,26 @@ import (
 )
 
 func newRootCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "jose",
 		Short: "jose is toolset for JSON Object Signing and Encryption (JOSE).",
 	}
+
+	cmd.CompletionOptions.DisableDefaultCmd = true
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = true
+
+	cmd.AddCommand(newVersionCmd())
+	cmd.AddCommand(newCompletionCmd())
+	cmd.AddCommand(newJwkCmd())
+	cmd.AddCommand(newBugReportCmd())
+
+	return cmd
 }
 
 // Execute run leadtime process.
 func Execute() int {
 	rootCmd := newRootCmd()
-	rootCmd.CompletionOptions.DisableDefaultCmd = true
-	rootCmd.SilenceUsage = true
-	rootCmd.SilenceErrors = true
-
-	rootCmd.AddCommand(newVersionCmd())
-	rootCmd.AddCommand(newCompletionCmd())
-	rootCmd.AddCommand(newJwkCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Error(err)
