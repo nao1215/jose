@@ -21,7 +21,7 @@ func newCompletionCmd() *cobra.Command {
 	}
 }
 
-func completion(cmd *cobra.Command, args []string) error {
+func completion(cmd *cobra.Command, _ []string) error {
 	return deployShellCompletionFileIfNeeded(cmd)
 }
 
