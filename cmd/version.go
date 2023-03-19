@@ -16,7 +16,7 @@ var (
 
 // getVersion return jose command version.
 // Version global variable is set by ldflags.
-func getVersion(cmd *cobra.Command, args []string) {
+func getVersion(cmd *cobra.Command, _ []string) {
 	version := "unknown"
 	if Version != "" {
 		version = Version

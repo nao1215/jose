@@ -25,7 +25,7 @@ func newManCmd() *cobra.Command {
 	return cmd
 }
 
-func man(cmd *cobra.Command, args []string) error { //nolint
+func man(cmd *cobra.Command, _ []string) error { //nolint
 	return generateManpages(filepath.Join("/", "usr", "share", "man", "man1"))
 }
 

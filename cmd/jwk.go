@@ -284,7 +284,7 @@ func (j *jwkGenerater) writeJWKSet(w io.Writer) error {
 	return ErrOutputFormat
 }
 
-func runGenerate(cmd *cobra.Command, args []string) error {
+func runGenerate(cmd *cobra.Command, _ []string) error {
 	generator, err := newJwkGenerater(cmd)
 	if err != nil {
 		return err
