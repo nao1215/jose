@@ -17,6 +17,8 @@ func newBugReportCmd() *cobra.Command {
 	}
 }
 
+var openBrowserFunc = openBrowser
+
 func bugReport(cmd *cobra.Command, args []string) error {
 	var buf bytes.Buffer
 
@@ -46,10 +48,9 @@ Any other useful data to share.
 	body := buf.String()
 	url := "https://github.com/nao1215/jose/issues/new?title=[Bug Report] Title&body=" + url.QueryEscape(body)
 
-	if !openBrowser(url) {
+	if !openBrowserFunc(url) {
 		fmt.Print("Please file a new issue at https://github.com/nao1215/jose/issues/new using this template:\n\n")
 		fmt.Print(body)
 	}
-
 	return nil
 }
