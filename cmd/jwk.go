@@ -24,11 +24,11 @@ func newJwkCmd() *cobra.Command {
 		Short: "jwk is toolset for JSON Web Key",
 	}
 
-	cmd.AddCommand(newJwkGenerate())
+	cmd.AddCommand(newJwkGenerateCmd())
 	return cmd
 }
 
-func newJwkGenerate() *cobra.Command {
+func newJwkGenerateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "generate",
 		Short: "generate a private JWK (JSON Web Key)",
