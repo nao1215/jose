@@ -4,7 +4,7 @@
 [![reviewdog](https://github.com/nao1215/jose/actions/workflows/reviewdog.yml/badge.svg)](https://github.com/nao1215/jose/actions/workflows/reviewdog.yml)
 [![LinuxUnitTest](https://github.com/nao1215/jose/actions/workflows/linux_test.yml/badge.svg)](https://github.com/nao1215/jose/actions/workflows/linux_test.yml)
 [![MacUnitTest](https://github.com/nao1215/jose/actions/workflows/mac_test.yml/badge.svg)](https://github.com/nao1215/jose/actions/workflows/mac_test.yml)
-[![WindowsUnitTest](https://github.com/nao1215/jose/actions/workflows/windows_test.yml/badge.svg)](https://github.com/nao1215/jose/actions/workflows/windows_test.yml)
+[![WindowsUnitTest](https://github.com/nao1215/jose/actions/workflows/windows.yml/badge.svg)](https://github.com/nao1215/jose/actions/workflows/windows.yml)
 # jose - JSON Object Signing and Encryption CLI tool
 The jose command performs set of common operations involving JSON Object Signing and Encryption (otherwise known as JOSE or JWA/JWE/JWK/JWS/JWT). The jose command refers to the jwx command (MIT license, authored by lestrrat) located in [github.com/lestrrat-go/jwx](https://github.com/lestrrat-go/jwx).
 
