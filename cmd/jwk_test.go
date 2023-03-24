@@ -14,12 +14,24 @@ func Test_newJwkGenerater(t *testing.T) {
 		t.Parallel()
 
 		cmd := newJwkGenerateCmd()
-		cmd.Flags().Set("curve", "Ed25519")
-		cmd.Flags().Set("type", "RSA")
-		cmd.Flags().Set("size", "4096")
-		cmd.Flags().Set("output-format", "pem")
-		cmd.Flags().Set("output", "test.pem")
-		cmd.Flags().Set("public-key", "true")
+		if err := cmd.Flags().Set("curve", "Ed25519"); err != nil {
+			t.Fatal(err)
+		}
+		if err := cmd.Flags().Set("type", "RSA"); err != nil {
+			t.Fatal(err)
+		}
+		if err := cmd.Flags().Set("size", "4096"); err != nil {
+			t.Fatal(err)
+		}
+		if err := cmd.Flags().Set("output-format", "pem"); err != nil {
+			t.Fatal(err)
+		}
+		if err := cmd.Flags().Set("output", "test.pem"); err != nil {
+			t.Fatal(err)
+		}
+		if err := cmd.Flags().Set("public-key", "true"); err != nil {
+			t.Fatal(err)
+		}
 
 		got, err := newJwkGenerater(cmd)
 		if err != nil {

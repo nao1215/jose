@@ -68,6 +68,8 @@ func TestWriteJSON(t *testing.T) {
 }
 
 func TestAvailableCurves(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		want []string
@@ -78,7 +80,11 @@ func TestAvailableCurves(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			got := availableCurves()
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
