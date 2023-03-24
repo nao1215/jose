@@ -38,7 +38,7 @@ changelog:
       - "^test:"
 nfpms:
   - maintainer: Naohiro CHIKAMATSU <n.chika156@gmail.com>
-    description: jose - calculate PR lead time statistics on GitHub
+    description: jose - CLI tool for JOSE (JSON Object Signing and Encryption)
     homepage: https://github.com/nao1215/jose
     license: MIT License
     formats:
