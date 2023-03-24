@@ -11,7 +11,6 @@ func TestCompletion(t *testing.T) { //nolint
 	t.Setenv("HOME", tmpDir)
 
 	t.Run("generate completion file", func(t *testing.T) {
-		t.Parallel()
 		if isWindows() {
 			return
 		}
@@ -35,7 +34,6 @@ func TestCompletion(t *testing.T) { //nolint
 	})
 
 	t.Run("update completion file", func(t *testing.T) {
-		t.Parallel()
 		if isWindows() {
 			return
 		}

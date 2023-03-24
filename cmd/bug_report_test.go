@@ -14,8 +14,6 @@ import (
 )
 
 func TestBugReport(t *testing.T) {
-	t.Parallel()
-
 	t.Run("Check bug-report --help", func(t *testing.T) {
 		t.Parallel()
 
@@ -47,8 +45,6 @@ func TestBugReport(t *testing.T) {
 	})
 
 	t.Run("open bug report", func(t *testing.T) {
-		t.Parallel()
-
 		orgVer := Version
 		Version = "v1.0.0"
 		defer func() {
