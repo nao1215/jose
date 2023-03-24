@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/charmbracelet/log v0.2.1
 	github.com/go-playground/validator/v10 v10.12.0
+	github.com/google/go-cmp v0.5.9
 	github.com/lestrrat-go/jwx/v2 v2.0.9
 	github.com/nao1215/gorky v0.2.1
 	github.com/spf13/cobra v1.6.1
@@ -13,6 +14,7 @@ require (
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/lipgloss v0.7.1 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
@@ -36,4 +38,5 @@ require (
 	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
