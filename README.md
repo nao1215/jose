@@ -1,3 +1,10 @@
+![Coverage](https://raw.githubusercontent.com/nao1215/octocovs-central-repo/main/badges/nao1215/jose/coverage.svg)
+![Test Execution Time](https://raw.githubusercontent.com/nao1215/octocovs-central-repo/main/badges/nao1215/jose/time.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/nao1215/jose)](https://goreportcard.com/report/github.com/nao1215/jose)
+[![reviewdog](https://github.com/nao1215/jose/actions/workflows/reviewdog.yml/badge.svg)](https://github.com/nao1215/jose/actions/workflows/reviewdog.yml)
+[![LinuxUnitTest](https://github.com/nao1215/jose/actions/workflows/linux_test.yml/badge.svg)](https://github.com/nao1215/jose/actions/workflows/linux_test.yml)
+[![MacUnitTest](https://github.com/nao1215/jose/actions/workflows/mac_test.yml/badge.svg)](https://github.com/nao1215/jose/actions/workflows/mac_test.yml)
+[![WindowsUnitTest](https://github.com/nao1215/jose/actions/workflows/windows_test.yml/badge.svg)](https://github.com/nao1215/jose/actions/workflows/windows_test.yml)
 # jose - JSON Object Signing and Encryption CLI tool
 The jose command performs set of common operations involving JSON Object Signing and Encryption (otherwise known as JOSE or JWA/JWE/JWK/JWS/JWT). The jose command refers to the jwx command (MIT license, authored by lestrrat) located in [github.com/lestrrat-go/jwx](https://github.com/lestrrat-go/jwx).
 
@@ -70,6 +77,9 @@ KcI48LscuQT0Q0ROWdWLnpPJe/Zags78zSkQT053rLCn6aceO5cdY6o=
 
 ## Contributing
 First off, thanks for taking the time to contribute!! Contributions are not only related to development. For example, GitHub Star motivates me to develop!
+
+[![Star History Chart](https://api.star-history.com/svg?repos=nao1215/jose&type=Date)](https://star-history.com/#nao1215/jose&Date)
+
 
 ## Contact
 If you would like to send comments such as "find a bug" or "request for additional features" to the developer, please use one of the following contacts.
