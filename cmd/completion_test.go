@@ -6,11 +6,12 @@ import (
 	"github.com/nao1215/gorky/file"
 )
 
-func Test_completion(t *testing.T) {
+func TestCompletion(t *testing.T) { //nolint
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 
 	t.Run("generate completion file", func(t *testing.T) {
+		t.Parallel()
 		if isWindows() {
 			return
 		}
@@ -34,6 +35,7 @@ func Test_completion(t *testing.T) {
 	})
 
 	t.Run("update completion file", func(t *testing.T) {
+		t.Parallel()
 		if isWindows() {
 			return
 		}

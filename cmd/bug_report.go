@@ -17,9 +17,9 @@ func newBugReportCmd() *cobra.Command {
 	}
 }
 
-var openBrowserFunc = openBrowser
+var openBrowserFunc = openBrowser //nolint
 
-func bugReport(cmd *cobra.Command, _ []string) error {
+func bugReport(_ *cobra.Command, _ []string) error {
 	var buf bytes.Buffer
 
 	const (

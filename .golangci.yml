@@ -43,7 +43,7 @@ linters:
     - nakedret
     #- nlreturn
     - noctx
-    - nolintlint
+    # - nolintlint
     - paralleltest
     - prealloc
     - rowserrcheck

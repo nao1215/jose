@@ -103,6 +103,7 @@ func TestOpenOutputFile(t *testing.T) {
 	})
 
 	t.Run("Open file", func(t *testing.T) {
+		t.Parallel()
 		tmpFile := filepath.Join(t.TempDir(), "jose.txt")
 		file, err := openOutputFile(tmpFile)
 		if err != nil {

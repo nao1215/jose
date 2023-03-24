@@ -41,5 +41,4 @@ func Test_newJwkGenerater(t *testing.T) {
 			t.Errorf("value is mismatch (-want +got):\n%s", diff)
 		}
 	})
-
 }
