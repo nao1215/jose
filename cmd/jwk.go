@@ -24,11 +24,11 @@ func newJwkCmd() *cobra.Command {
 		Short: "jwk is toolset for JSON Web Key",
 	}
 
-	cmd.AddCommand(newJwkGenerate())
+	cmd.AddCommand(newJwkGenerateCmd())
 	return cmd
 }
 
-func newJwkGenerate() *cobra.Command {
+func newJwkGenerateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "generate",
 		Short: "generate a private JWK (JSON Web Key)",
@@ -122,11 +122,7 @@ func (j *jwkGenerater) valid() error {
 		return err
 	}
 
-	if err := j.validECDSACurve(); err != nil {
-		return err
-	}
-
-	return nil
+	return j.validECDSACurve()
 }
 
 func (j *jwkGenerater) validKeySize() error {
@@ -166,7 +162,7 @@ func (j *jwkGenerater) generate() (err error) {
 
 	key, err := jwk.FromRaw(rawKey)
 	if err != nil {
-		return fmt.Errorf("%w :%s", ErrGenerateJWKFromRawKey, err.Error())
+		return wrap(ErrGenerateJWKFromRawKey, err.Error())
 	}
 
 	j.KeySet.AddKey(key)
@@ -190,7 +186,7 @@ func (j *jwkGenerater) generate() (err error) {
 func (j *jwkGenerater) setPublicKey() error {
 	publicKey, err := jwk.PublicSetOf(j.KeySet)
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrGeneratePublicKey, err.Error())
+		return wrap(ErrGeneratePublicKey, err.Error())
 	}
 	j.KeySet = publicKey
 	return nil
@@ -199,7 +195,7 @@ func (j *jwkGenerater) setPublicKey() error {
 func (j *jwkGenerater) generateRSA() (interface{}, error) {
 	key, err := rsa.GenerateKey(rand.Reader, j.KeySize)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", ErrGenerateRSA, err.Error())
+		return nil, wrap(ErrGenerateRSA, err.Error())
 	}
 	return key, nil
 }
@@ -208,7 +204,7 @@ func (j *jwkGenerater) generateECDSA() (interface{}, error) {
 	var curve elliptic.Curve
 	var curveAlogrithm jwa.EllipticCurveAlgorithm
 	if err := curveAlogrithm.Accept(j.Curve); err != nil {
-		return nil, fmt.Errorf("%w (ECDSA only support %s): %s", ErrInvalidCurve, strings.Join(availableCurves(), "/"), err.Error())
+		return nil, wrap(fmt.Errorf("%w (ECDSA only support %s)", ErrInvalidCurve, strings.Join(availableCurves(), "/")), err.Error())
 	}
 
 	curve, ok := jwk.CurveForAlgorithm(curveAlogrithm)
@@ -218,7 +214,7 @@ func (j *jwkGenerater) generateECDSA() (interface{}, error) {
 
 	key, err := ecdsa.GenerateKey(curve, rand.Reader)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", ErrGenertateECDSA, err.Error())
+		return nil, wrap(ErrGenertateECDSA, err.Error())
 	}
 	return key, nil
 }
@@ -232,7 +228,7 @@ func (j *jwkGenerater) generateOctetSeq() interface{} {
 func (j *jwkGenerater) generateOKP() (interface{}, error) {
 	var curveAlogrithm jwa.EllipticCurveAlgorithm
 	if err := curveAlogrithm.Accept(j.Curve); err != nil {
-		return nil, fmt.Errorf("%w (only support Ed25519/X25519): %s", ErrInvalidCurve, err.Error())
+		return nil, wrap(fmt.Errorf("%w (only support Ed25519/X25519)", ErrInvalidCurve), err.Error())
 	}
 
 	var rawKey interface{}
@@ -240,13 +236,13 @@ func (j *jwkGenerater) generateOKP() (interface{}, error) {
 	case jwa.Ed25519:
 		_, priv, err := ed25519.GenerateKey(rand.Reader)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", ErrGenerateEd25519, err.Error())
+			return nil, wrap(ErrGenerateEd25519, err.Error())
 		}
 		rawKey = priv
 	case jwa.X25519:
 		_, priv, err := x25519.GenerateKey(rand.Reader)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", ErrGenerateX25519, err.Error())
+			return nil, wrap(ErrGenerateX25519, err.Error())
 		}
 		rawKey = priv
 	}
@@ -254,37 +250,45 @@ func (j *jwkGenerater) generateOKP() (interface{}, error) {
 }
 
 func (j *jwkGenerater) writeJWKSet(w io.Writer) error {
-	if j.OutputFormat == "pem" {
-		buf, err := jwk.Pem(j.KeySet)
-		if err != nil {
-			return fmt.Errorf("%w: %s", ErrFormatKeyInPem, err.Error())
-		}
-		if _, err := w.Write(buf); err != nil {
-			return fmt.Errorf("%w: %s", ErrWriteKey, err.Error())
-		}
-		return nil
+	switch j.OutputFormat {
+	case "pem":
+		return j.writeJWKSetByPemFormat(w)
+	case "json":
+		return j.writeJWKSetByPemByJSONFormat(w)
+	default:
+		return ErrOutputFormat
 	}
-
-	if j.OutputFormat == "json" {
-		if j.KeySet.Len() != 1 {
-			if err := writeJSON(w, j.KeySet); err != nil {
-				return err
-			}
-		} else {
-			key, ok := j.KeySet.Key(0)
-			if !ok {
-				return ErrEmptyKey
-			}
-			if err := writeJSON(w, key); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-	return ErrOutputFormat
 }
 
-func runGenerate(cmd *cobra.Command, args []string) error {
+func (j *jwkGenerater) writeJWKSetByPemFormat(w io.Writer) error {
+	buf, err := jwk.Pem(j.KeySet)
+	if err != nil {
+		return wrap(ErrFormatKeyInPem, err.Error())
+	}
+	if _, err := w.Write(buf); err != nil {
+		return wrap(ErrWriteKey, err.Error())
+	}
+	return nil
+}
+
+func (j *jwkGenerater) writeJWKSetByPemByJSONFormat(w io.Writer) error {
+	if j.KeySet.Len() != 1 {
+		if err := writeJSON(w, j.KeySet); err != nil {
+			return err
+		}
+	} else {
+		key, ok := j.KeySet.Key(0)
+		if !ok {
+			return ErrEmptyKey
+		}
+		if err := writeJSON(w, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func runGenerate(cmd *cobra.Command, _ []string) error {
 	generator, err := newJwkGenerater(cmd)
 	if err != nil {
 		return err

@@ -1,0 +1,7 @@
+bug-report opens the default browser to start a bug report which will include useful system information.
+
+Usage:
+  jose bug-report [flags]
+
+Flags:
+  -h, --help   help for bug-report

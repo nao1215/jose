@@ -1,6 +1,9 @@
 package cmd
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
 	ErrEllipticCurveType     = errors.New("elliptic curve type is 'Ed25519', 'Ed448', 'P-256', 'P-384', 'P-521', 'X25519', 'X448'")
@@ -21,3 +24,15 @@ var (
 	ErrGeneratePublicKey     = errors.New("failed to generate public keys")
 	ErrGenerateJWKFromRawKey = errors.New("failed to generate new JWK from raw key")
 )
+
+// wrap return wrapping error with message.
+// If e is nil, return new error with msg. If msg is empty string, return e.
+func wrap(e error, msg string) error {
+	if e == nil {
+		return errors.New(msg)
+	}
+	if msg == "" {
+		return e
+	}
+	return fmt.Errorf("%w: %s", e, msg)
+}

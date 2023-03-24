@@ -1,3 +1,4 @@
+// Package cmd is a package that contains subcommands for the jose CLI command.
 package cmd
 
 import (
@@ -6,22 +7,27 @@ import (
 )
 
 func newRootCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "josec",
-		Short: "josec is toolset for JSON Object Signing and Encryption (JOSE).",
+	cmd := &cobra.Command{
+		Use:   "jose",
+		Short: "jose is toolset for JSON Object Signing and Encryption (JOSE).",
 	}
+
+	cmd.CompletionOptions.DisableDefaultCmd = true
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = true
+
+	cmd.AddCommand(newVersionCmd())
+	cmd.AddCommand(newCompletionCmd())
+	cmd.AddCommand(newJwkCmd())
+	cmd.AddCommand(newBugReportCmd())
+	cmd.AddCommand(newManCmd())
+
+	return cmd
 }
 
 // Execute run leadtime process.
 func Execute() int {
 	rootCmd := newRootCmd()
-	rootCmd.CompletionOptions.DisableDefaultCmd = true
-	rootCmd.SilenceUsage = true
-	rootCmd.SilenceErrors = true
-
-	rootCmd.AddCommand(newVersionCmd())
-	rootCmd.AddCommand(newCompletionCmd())
-	rootCmd.AddCommand(newJwkCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Error(err)
