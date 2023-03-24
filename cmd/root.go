@@ -1,3 +1,4 @@
+// Package cmd is a package that contains subcommands for the jose CLI command.
 package cmd
 
 import (

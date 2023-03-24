@@ -7,6 +7,7 @@ import (
 )
 
 func TestVersion(t *testing.T) {
+	t.Parallel()
 	t.Run("Execute version subcommand", func(t *testing.T) {
 		os.Args = []string{
 			"jose",
@@ -29,7 +30,6 @@ func TestVersion(t *testing.T) {
 			t.Errorf("mismatch want=%d, got=%d", wantExitCode, gotExitCode)
 		}
 	})
-
 }
 
 type executeFn func() int
