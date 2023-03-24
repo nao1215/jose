@@ -20,16 +20,23 @@ func TestWriteJSON(t *testing.T) {
 		wantErr    error
 	}{
 		{
-			name:       "simple test",
-			v:          map[string]interface{}{"hello": "world"},
-			wantResult: `{"hello":"world"}`,
-			wantErr:    nil,
+			name: "simple test",
+			v:    map[string]interface{}{"hello": "world"},
+			wantResult: `{
+    "hello": "world"
+}
+`,
+			wantErr: nil,
 		},
 		{
-			name:       "complex test",
-			v:          struct{ X, Y int }{X: 1, Y: 2},
-			wantResult: `{"X":1,"Y":2}`,
-			wantErr:    nil,
+			name: "complex test",
+			v:    struct{ X, Y int }{X: 1, Y: 2},
+			wantResult: `{
+    "X": 1,
+    "Y": 2
+}
+`,
+			wantErr: nil,
 		},
 		{
 			name:       "invalid input",
@@ -60,7 +67,7 @@ func TestWriteJSON(t *testing.T) {
 	}
 }
 
-func Test_availableCurves(t *testing.T) {
+func TestAvailableCurves(t *testing.T) {
 	tests := []struct {
 		name string
 		want []string
