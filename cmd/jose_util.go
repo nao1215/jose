@@ -9,6 +9,10 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 
+const (
+	defaultKeySize = 2048
+)
+
 func writeJSON(w io.Writer, v interface{}) error {
 	buf, err := json.MarshalIndent(v, "", "    ")
 	if err != nil {

@@ -24,23 +24,26 @@ $ brew install nao1215/tap/jose
 ### Install from Package or Binary
 [The release page](https://github.com/nao1215/jose/releases) contains packages in .deb, .rpm, and .apk formats. gup command uses the go command internally, so the golang installation is required.
 
+## Supported OS (tested OS)
+- Linux (main target)
+- Mac
+- Windows
+
 ## How to use
 ### jose jwk - generate random JWKs for RSA/EC/oct/OKP key types
 **SYNOPSIS**
 ```
-generate a private JWK (JSON Web Key)
-
 Usage:
   jose jwk generate [flags]
 
 Flags:
-  -c, --curve string           Elliptic curve type for EC or OKP keys (Ed25519/Ed448/P-256/P-384/P-521/X25519/X448)
+  -c, --curve string           elliptic curve type for EC or OKP keys (Ed25519/Ed448/P-256/P-384/P-521/X25519/X448)
   -h, --help                   help for generate
-  -o, --output string          Output to file (default "-")
-  -O, --output-format string   RSA key output format (json/pem) (default "json")
-  -p, --public-key             Display public key
-  -s, --size int               RSA key size or oct key size (default 2048)
-  -t, --type string            JWK type (RSA/EC/OKP/oct)
+  -o, --output string          output to file (default "-")
+  -O, --output-format string   rsa key output format (json/pem) (default "json")
+  -p, --public-key             display public key
+  -s, --size int               rsa key size or oct key size (default 2048)
+  -t, --type string            jwk type (RSA/EC/OKP/oct)
 ```
 
 **Usage**
@@ -73,7 +76,28 @@ KcI48LscuQT0Q0ROWdWLnpPJe/Zags78zSkQT053rLCn6aceO5cdY6o=
 ### jose jwe encrypt/decrypt
 [WIP]
 ### jose jwa - List supported algorithms
-[WIP]
+**SYNOPSIS**
+```
+Usage:
+  jose jwa [flags]
+
+Flags:
+  -c, --content-encryption   print content encryption algorithms
+  -e, --elliptic-curve       print elliptic curve types
+  -h, --help                 help for jwa
+  -K, --key-encryption       print key encryption algorithms
+  -k, --key-type             print JWK key types
+  -s, --signature            print signature algorithms
+```
+
+**Usage**
+```
+$ jose jwa --key-type
+EC
+OKP
+RSA
+oct
+```
 
 ## Contributing
 First off, thanks for taking the time to contribute!! Contributions are not only related to development. For example, GitHub Star motivates me to develop!
