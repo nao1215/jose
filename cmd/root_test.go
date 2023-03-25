@@ -79,7 +79,6 @@ func TestExecute(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			os.Args = tt.args
 			gotStdOut, gotExitCode := getStdout(t, Execute)
 			if tt.wantExitCode != gotExitCode {
