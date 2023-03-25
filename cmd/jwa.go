@@ -96,42 +96,36 @@ func (j *jsonWebAlhorithm) writeJWA(w io.Writer) {
 		j.writeSignatureAlgorithms(w)
 		return
 	}
-	return
 }
 
 func (j *jsonWebAlhorithm) writeKeyTypes(w io.Writer) {
 	for _, alg := range jwa.KeyTypes() {
 		fmt.Fprintf(w, "%s\n", alg)
 	}
-	return
 }
 
 func (j *jsonWebAlhorithm) writeEllipticCurveAlgorithms(w io.Writer) {
 	for _, alg := range jwa.EllipticCurveAlgorithms() {
 		fmt.Fprintf(w, "%s\n", alg)
 	}
-	return
 }
 
 func (j *jsonWebAlhorithm) writeKeyEncryptionAlgorithms(w io.Writer) {
 	for _, alg := range jwa.KeyEncryptionAlgorithms() {
 		fmt.Fprintf(w, "%s\n", alg)
 	}
-	return
 }
 
 func (j *jsonWebAlhorithm) writeContentEncryptionAlgorithms(w io.Writer) {
 	for _, alg := range jwa.ContentEncryptionAlgorithms() {
 		fmt.Fprintf(w, "%s\n", alg)
 	}
-	return
 }
 
 func (j *jsonWebAlhorithm) writeSignatureAlgorithms(w io.Writer) {
 	for _, alg := range jwa.SignatureAlgorithms() {
 		fmt.Fprintf(w, "%s\n", alg)
 	}
-	return
 }
 
 func runJWA(cmd *cobra.Command, _ []string) error {

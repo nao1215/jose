@@ -37,7 +37,7 @@ func newJWKGenerateCmd() *cobra.Command {
 
 	cmd.Flags().StringP("curve", "c", "", "elliptic curve type for EC or OKP keys (Ed25519/Ed448/P-256/P-384/P-521/X25519/X448)")
 	cmd.Flags().StringP("type", "t", "", "jwk type (RSA/EC/OKP/oct)")
-	cmd.Flags().IntP("size", "s", 2048, "rsa key size or oct key size")
+	cmd.Flags().IntP("size", "s", defaultKeySize, "rsa key size or oct key size")
 	cmd.Flags().StringP("output-format", "O", "json", "rsa key output format (json/pem)")
 	cmd.Flags().StringP("output", "o", "-", "output to file")
 	cmd.Flags().BoolP("public-key", "p", false, "display public key")
