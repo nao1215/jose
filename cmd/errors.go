@@ -6,6 +6,7 @@ import (
 )
 
 var (
+	ErrNoOptions             = errors.New("no options specified")
 	ErrEllipticCurveType     = errors.New("elliptic curve type is 'Ed25519', 'Ed448', 'P-256', 'P-384', 'P-521', 'X25519', 'X448'")
 	ErrInvalidCurve          = errors.New("invalid elliptic curve")
 	ErrKeyType               = errors.New("key type is one of 'RSA', 'EC', 'OKP', 'oct'")

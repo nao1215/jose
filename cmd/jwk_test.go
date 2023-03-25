@@ -13,7 +13,7 @@ func Test_newJwkGenerater(t *testing.T) {
 	t.Run("Get all options", func(t *testing.T) {
 		t.Parallel()
 
-		cmd := newJwkGenerateCmd()
+		cmd := newJWKGenerateCmd()
 		if err := cmd.Flags().Set("curve", "Ed25519"); err != nil {
 			t.Fatal(err)
 		}
@@ -33,7 +33,7 @@ func Test_newJwkGenerater(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		got, err := newJwkGenerater(cmd)
+		got, err := newJWKGenerater(cmd)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -18,29 +18,29 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newJwkCmd() *cobra.Command {
+func newJWKCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "jwk",
-		Short: "jwk is toolset for JSON Web Key",
+		Short: "JWK is toolset for JSON Web Key",
 	}
 
-	cmd.AddCommand(newJwkGenerateCmd())
+	cmd.AddCommand(newJWKGenerateCmd())
 	return cmd
 }
 
-func newJwkGenerateCmd() *cobra.Command {
+func newJWKGenerateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "generate",
-		Short: "generate a private JWK (JSON Web Key)",
+		Short: "Generate a private JWK (JSON Web Key)",
 		RunE:  runGenerate,
 	}
 
-	cmd.Flags().StringP("curve", "c", "", "Elliptic curve type for EC or OKP keys (Ed25519/Ed448/P-256/P-384/P-521/X25519/X448)")
-	cmd.Flags().StringP("type", "t", "", "JWK type (RSA/EC/OKP/oct)")
-	cmd.Flags().IntP("size", "s", 2048, "RSA key size or oct key size")
-	cmd.Flags().StringP("output-format", "O", "json", "RSA key output format (json/pem)")
-	cmd.Flags().StringP("output", "o", "-", "Output to file")
-	cmd.Flags().BoolP("public-key", "p", false, "Display public key")
+	cmd.Flags().StringP("curve", "c", "", "elliptic curve type for EC or OKP keys (Ed25519/Ed448/P-256/P-384/P-521/X25519/X448)")
+	cmd.Flags().StringP("type", "t", "", "jwk type (RSA/EC/OKP/oct)")
+	cmd.Flags().IntP("size", "s", 2048, "rsa key size or oct key size")
+	cmd.Flags().StringP("output-format", "O", "json", "rsa key output format (json/pem)")
+	cmd.Flags().StringP("output", "o", "-", "output to file")
+	cmd.Flags().BoolP("public-key", "p", false, "display public key")
 
 	return cmd
 }
@@ -55,7 +55,7 @@ type jwkGenerater struct {
 	KeySet       jwk.Set `validate:"-"`
 }
 
-func newJwkGenerater(cmd *cobra.Command) (*jwkGenerater, error) {
+func newJWKGenerater(cmd *cobra.Command) (*jwkGenerater, error) {
 	curve, err := cmd.Flags().GetString("curve")
 	if err != nil {
 		return nil, err
@@ -289,7 +289,7 @@ func (j *jwkGenerater) writeJWKSetByPemByJSONFormat(w io.Writer) error {
 }
 
 func runGenerate(cmd *cobra.Command, _ []string) error {
-	generator, err := newJwkGenerater(cmd)
+	generator, err := newJWKGenerater(cmd)
 	if err != nil {
 		return err
 	}

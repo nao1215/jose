@@ -18,9 +18,10 @@ func newRootCmd() *cobra.Command {
 
 	cmd.AddCommand(newVersionCmd())
 	cmd.AddCommand(newCompletionCmd())
-	cmd.AddCommand(newJwkCmd())
+	cmd.AddCommand(newJWKCmd())
 	cmd.AddCommand(newBugReportCmd())
 	cmd.AddCommand(newManCmd())
+	cmd.AddCommand(newJWACmd())
 
 	return cmd
 }
