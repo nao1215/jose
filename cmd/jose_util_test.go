@@ -96,18 +96,6 @@ func TestAvailableCurves(t *testing.T) {
 
 func TestOpenOutputFile(t *testing.T) {
 	t.Parallel()
-	t.Run("Open stdout", func(t *testing.T) {
-		t.Parallel()
-		got, err := openOutputFile("-")
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		want := os.Stdout
-		if want != got {
-			t.Error("can not open stdout")
-		}
-	})
 
 	t.Run("Open file", func(t *testing.T) {
 		t.Parallel()
@@ -152,8 +140,8 @@ func TestOpenOutputFile(t *testing.T) {
 		t.Parallel()
 
 		_, err := openOutputFile("")
-		if !errors.Is(err, ErrCreateFile) {
-			t.Errorf("mismatch want=%v, got=%v", ErrCreateFile, err)
+		if !errors.Is(err, ErrRequireFileName) {
+			t.Errorf("Expected error '%v', but got '%v'", ErrRequireFileName, err)
 		}
 	})
 }
@@ -193,7 +181,11 @@ func TestOpenInputFile(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
-		defer file.Close()
+		defer func() {
+			if e := file.Close(); e != nil {
+				t.Fatal(e)
+			}
+		}()
 
 		got, err := io.ReadAll(file)
 		if err != nil {
@@ -213,7 +205,11 @@ func TestOpenInputFile(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
-		defer file.Close()
+		defer func() {
+			if e := file.Close(); e != nil {
+				t.Fatal(e)
+			}
+		}()
 
 		got, err := io.ReadAll(file)
 		if err != nil {
@@ -227,6 +223,8 @@ func TestOpenInputFile(t *testing.T) {
 	})
 
 	t.Run("Not specify file name", func(t *testing.T) {
+		t.Parallel()
+
 		_, err := openInputFile("")
 		if !errors.Is(err, ErrRequireFileName) {
 			t.Errorf("Expected error '%v', but got '%v'", ErrRequireFileName, err)

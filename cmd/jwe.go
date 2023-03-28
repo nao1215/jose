@@ -132,7 +132,11 @@ func runJWEEncrypt(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	defer src.Close()
+	defer func() {
+		if e := src.Close(); e != nil {
+			err = errors.Join(err, e)
+		}
+	}()
 
 	buf, err := io.ReadAll(src)
 	if err != nil {
@@ -177,7 +181,11 @@ func runJWEEncrypt(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	defer output.Close()
+	defer func() {
+		if e := output.Close(); e != nil {
+			err = errors.Join(err, e)
+		}
+	}()
 
 	fmt.Fprintf(output, "%s", encrypted)
 	return nil
