@@ -112,7 +112,7 @@ func (j *jwkGenerater) valid() error {
 			case "KeySize":
 				e = errors.Join(e, ErrKeySize)
 			case "OutputFormat":
-				e = errors.Join(e, ErrOutputFormat)
+				e = errors.Join(e, ErrInvalidKeyFormat)
 			}
 		}
 		return e
@@ -256,7 +256,7 @@ func (j *jwkGenerater) writeJWKSet(w io.Writer) error {
 	case "json":
 		return j.writeJWKSetByPemByJSONFormat(w)
 	default:
-		return ErrOutputFormat
+		return ErrInvalidKeyFormat
 	}
 }
 

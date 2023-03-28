@@ -25,11 +25,37 @@ func writeJSON(w io.Writer, v interface{}) error {
 	return nil
 }
 
+func openInputFile(path string) (io.ReadCloser, error) {
+	if path == "" {
+		return nil, ErrRequireFileName
+	}
+
+	if path == "-" {
+		return io.NopCloser(os.Stdin), nil
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, wrap(ErrOpenFile, err.Error())
+	}
+	return f, nil
+}
+
+type dummyWriteCloser struct {
+	io.Writer
+}
+
+func (*dummyWriteCloser) Close() error {
+	return nil
+}
+
 func openOutputFile(path string) (io.WriteCloser, error) {
 	var output io.WriteCloser
 	switch path {
 	case "-":
-		output = os.Stdout
+		output = &dummyWriteCloser{os.Stdout}
+	case "":
+		return nil, ErrRequireFileName
 	default:
 		f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
 		if err != nil {
@@ -46,4 +72,21 @@ func availableCurves() []string {
 		curves = append(curves, v.Params().Name)
 	}
 	return curves
+}
+
+func getKeyFile(keyFile, format string) (jwk.Set, error) {
+	var keyoptions []jwk.ReadFileOption
+	switch format {
+	case "json":
+	case "pem":
+		keyoptions = append(keyoptions, jwk.WithPEM(true))
+	default:
+		return nil, wrap(ErrInvalidKeyFormat, "format is "+format)
+	}
+
+	keySet, err := jwk.ReadFile(keyFile, keyoptions...)
+	if err != nil {
+		return nil, wrap(ErrParseKey, err.Error())
+	}
+	return keySet, nil
 }
