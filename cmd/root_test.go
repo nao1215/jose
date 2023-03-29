@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -92,6 +93,40 @@ func TestExecute(t *testing.T) {
 	}
 }
 
+func TestExecuteEncryptAndDecrypt(t *testing.T) {
+
+	t.Run("encrypt and decrypt message", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		tmpFile := filepath.Join(tmpDir, "message.txt")
+
+		// encrypt
+		os.Args = []string{
+			"jose", "jwe", "encrypt", "--key", filepath.Join("testdata", "jwe", "ec.jwk"),
+			"--key-encryption", "ECDH-ES", "--content-encryption", "A256CBC-HS512",
+			"--output", tmpFile, filepath.Join("testdata", "jwe", "payload.txt")}
+		wantExitCode := 0
+
+		_, gotExitCode := getStdout(t, Execute)
+		if wantExitCode != gotExitCode {
+			t.Errorf("exit code mismatch: want=%d, got=%d", wantExitCode, gotExitCode)
+		}
+
+		// decrypt
+		os.Args = []string{"jose", "jwe", "decrypt", "--key", filepath.Join("testdata", "jwe", "ec.jwk"), tmpFile}
+		wantExitCode = 0
+		wantStdOut := "Hello, World!"
+
+		gotStdOut, gotExitCode := getStdout(t, Execute)
+		if wantExitCode != gotExitCode {
+			t.Errorf("exit code mismatch: want=%d, got=%d", wantExitCode, gotExitCode)
+		}
+
+		if diff := cmp.Diff(wantStdOut, gotStdOut); diff != "" {
+			t.Errorf("value is mismatch (-want +got):\n%s", diff)
+		}
+	})
+}
+
 type executeFn func() int
 
 func getStdout(t *testing.T, fn executeFn) (string, int) {
@@ -117,7 +152,6 @@ func getStdout(t *testing.T, fn executeFn) (string, int) {
 	if _, err := buffer.ReadFrom(r); err != nil {
 		t.Fatalf("fail read buf: %v", err)
 	}
-	s := buffer.String()
 
-	return s[:len(s)-1], exitCode
+	return chop(buffer.String()), exitCode
 }
