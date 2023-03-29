@@ -36,6 +36,9 @@ $ brew install nao1215/tap/jose
 Usage:
   jose jwk generate [flags]
 
+Aliases:
+  generate, gen
+
 Flags:
   -c, --curve string           elliptic curve type for EC or OKP keys (Ed25519/Ed448/P-256/P-384/P-521/X25519/X448)
   -h, --help                   help for generate
@@ -74,7 +77,65 @@ KcI48LscuQT0Q0ROWdWLnpPJe/Zags78zSkQT053rLCn6aceO5cdY6o=
 ### jose jws - Parses the given JWS message, and prints out the content in a human-redable format
 [WIP] 
 ### jose jwe encrypt/decrypt
-[WIP]
+**encrypt SYNOPSIS**
+```
+Usage:
+  jose jwe encrypt [flags]
+
+Aliases:
+  encrypt, enc
+
+Flags:
+  -z, --compress                  Enable compression
+  -c, --content-encryption NAME   Content encryption algorithm name NAME (A128CBC-HS256/A128GCM/A192CBC-HS384/A192GCM/A256CBC-HS512/A256GCM)
+  -h, --help                      help for encrypt
+  -k, --key string                JWK to encrypt with
+  -K, --key-encryption NAME       Key encryption algorithm name NAME (e.g. RSA-OAEP, ECDH-ES, etc)
+  -F, --key-format string         JWK format: json or pem (default "json")
+  -o, --output string             output to file (default "-")
+```
+
+**encrypt usage**
+```
+※ Message to be Encrypt
+$ cat cmd/testdata/jwe/payload.txt
+Hello, World!
+
+※ Generate JWK to be used for Encrypt
+$ jose jwk generate --curve P-256 --type EC > cmd/testdata/jwe/ec.jwk
+
+$ jose jwe encrypt --key cmd/testdata/jwe/ec.jwk --key-encryption ECDH-ES --content-encryption A256CBC-HS512 cmd/testdata/jwe/payload.txt
+eyJhbGciOiJFQ0RILUVTIiwiZW5jIjoiQTI1NkNCQy1IUzUxMiIsImVwayI6eyJjcnYiOiJQLTI1NiIsImt0eSI6IkVDIiwieCI6ImRMUFp6dUNMb29xeGJJNUI3dzc0RmNicUdwLXlMb2dUX0ZRVkMtQTZQNjAiLCJ5IjoiRUJTTmpFb3hKdUV2ckVFek5qTjlzOFRDUEd5QnBjcG1mV0RkeEtxcnZOWSJ9fQ..2Qw30wTTD5OS-bmZTt6kkg.xJ5sPix2QUJKjh_gl0SReA.Zm7AkepHGYgQ24Tf67-47rP0UWmQKOgZKzt2X1RTMFc
+```
+
+**decrypt SYNOPSIS**
+```
+Usage:
+  jose jwe decrypt [flags]
+
+Aliases:
+  decrypt, dec
+
+Flags:
+  -h, --help                  help for decrypt
+  -k, --key string            JWK to decrypt with
+  -K, --key-encryption NAME   Key encryption algorithm name NAME (e.g. RSA-OAEP, ECDH-ES, etc)
+  -F, --key-format string     JWK format: json or pem (default "json")
+  -o, --output string         output to file (default "-"
+```
+
+**decrypt usage**
+```
+※ Encrypt the contents of payload.txt and save it in message.jwe
+$ jose jwe encrypt --key cmd/testdata/jwe/ec.jwk --key-encryption ECDH-ES --content-encryption A256CBC-HS512 cmd/testdata/jwe/payload.txt > cmd/testdata/jwe/message.jwe
+
+$ cat cmd/testdata/jwe/message.jwe 
+eyJhbGciOiJFQ0RILUVTIiwiZW5jIjoiQTI1NkNCQy1IUzUxMiIsImVwayI6eyJjcnYiOiJQLTI1NiIsImt0eSI6IkVDIiwieCI6IjRpUVVDakJZbVJ2ZHY0TDVQaEVuSG5LVUpLdzRzUzZfN0hYa1JnQ3FCVWsiLCJ5IjoicEtkMGxjZXBuVy1uYThLWV9BM2RocHg1aG84cWdQOFRGY21obFBHNk1ydyJ9fQ..zdhh12XQ2imtVWXCKgufvg.5LPIRDY1Y351zdHxf0AG8Q.COXEOkONS9fiLluvmya_kAL5sm3G9_FtsoHtEfa5bxM
+
+$ jose jwe decrypt --key cmd/testdata/jwe/ec.jwk cmd/testdata/jwe/message.jwe 
+Hello, World!
+```
+
 ### jose jwa - List supported algorithms
 **SYNOPSIS**
 ```
