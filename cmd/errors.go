@@ -28,6 +28,7 @@ var (
 	ErrWriteJSON                = errors.New("failed to write JSON")
 	ErrCreateFile               = errors.New("failed to create file")
 	ErrEncrypt                  = errors.New("failed to encrypt message")
+	ErrDecrypt                  = errors.New("failed to decrypt message")
 	ErrGenerateRSA              = errors.New("failed to generate RSA private key")
 	ErrGenertateECDSA           = errors.New("failed to generate ECDSA private key")
 	ErrGenerateEd25519          = errors.New("failed to generate ed25519 private key")

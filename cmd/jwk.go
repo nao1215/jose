@@ -30,9 +30,10 @@ func newJWKCmd() *cobra.Command {
 
 func newJWKGenerateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "generate",
-		Short: "Generate a private JWK (JSON Web Key)",
-		RunE:  runGenerate,
+		Use:     "generate",
+		Aliases: []string{"gen"},
+		Short:   "Generate a private JWK (JSON Web Key)",
+		RunE:    runGenerate,
 	}
 
 	cmd.Flags().StringP("curve", "c", "", "elliptic curve type for EC or OKP keys (Ed25519/Ed448/P-256/P-384/P-521/X25519/X448)")
