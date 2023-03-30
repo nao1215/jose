@@ -231,3 +231,34 @@ func TestOpenInputFile(t *testing.T) {
 		}
 	})
 }
+
+func Test_chop(t *testing.T) {
+	tests := []struct {
+		name string
+		s    string
+		want string
+	}{
+		{
+			name: "no line feed",
+			s:    "no line feed",
+			want: "no line feed",
+		},
+		{
+			name: "with \n",
+			s:    "with line feed\n",
+			want: "with line feed",
+		},
+		{
+			name: "with \r\n",
+			s:    "with line feed\r\n",
+			want: "with line feed",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := chop(tt.s); got != tt.want {
+				t.Errorf("chop() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
@@ -89,4 +90,12 @@ func getKeyFile(keyFile, format string) (jwk.Set, error) {
 		return nil, wrap(ErrParseKey, err.Error())
 	}
 	return keySet, nil
+}
+
+func chop(s string) string {
+	s = strings.TrimRight(s, "\n")
+	if strings.HasSuffix(s, "\r") {
+		s = strings.TrimRight(s, "\r")
+	}
+	return s
 }
