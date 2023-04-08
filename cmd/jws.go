@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jws"
 	"github.com/spf13/cobra"
 )
@@ -91,9 +93,8 @@ func runJWSParse(_ *cobra.Command, args []string) error {
 
 func newJWSSignCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "sign",
-		Aliases: []string{"sig"},
-		Short:   "Creates a signed JWS message in compact format from a key and payload.",
+		Use:   "sign",
+		Short: "Creates a signed JWS message in compact format from a key and payload.",
 		Long: `Signs the payload in FILE and generates a JWS message in compact format.
 Use "-" as FILE to read from STDIN.
 
@@ -264,4 +265,196 @@ func (j *jwsSigner) signOptions(alg jwa.KeyAlgorithm, key interface{}) ([]jws.Si
 	options = append(options, jws.WithKey(alg, key))
 
 	return options, nil
+}
+
+func newJWSVerifyCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "verify",
+		Short: "Verify JWS messages",
+		Long: ` Parses a JWS message in FILE, and verifies using the specified method.
+Use "-" as FILE to read from STDIN.
+
+By default the user is responsible for providing the algorithm to
+use to verify the signature. This is because we can not safely rely
+on the "alg" field of the JWS message to deduce which key to use.
+See https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/
+ 
+The alternative is to match a key based on explicitly specified
+key ID ("kid"). In this case the following conditions must be met
+for a successful verification:
+
+  (1) JWS message must list the key ID that it expects
+  (2) At least one of the provided JWK must contain the same key ID
+  (3) The same key must also contain the "alg" field 
+
+Therefore, the following key may be able to successfully verify
+a JWS message using "--match-kid":
+
+  { "typ": "oct", "alg": "H256", "kid": "mykey", .... }
+
+But the following two will never succeed because they lack
+either "alg" or "kid"
+
+  { "typ": "oct", "kid": "mykey", .... }
+  { "typ": "oct", "alg": "H256",  .... }
+`,
+		RunE: runJWSVerify,
+	}
+
+	cmd.Flags().StringP("algorithm", "a", "none", "algorithm to use in single key mode")
+	cmd.Flags().StringP("key", "k", "", "file name that contains the key to use. single JWK or JWK set")
+	cmd.Flags().StringP("key-format", "F", "json", "format of the store key (json/pem)")
+	cmd.Flags().BoolP("match-kid", "m", false, "instead of using alg, attempt to verify only if the key ID (kid) matches")
+	cmd.Flags().StringP("output", "o", "-", "output to file")
+
+	return cmd
+}
+
+type jwsVerifier struct {
+	Algorithm     string `validate:"required,oneof=ES256 ES256K ES384 ES512 EdDSA HS256 HS384 HS512 PS256 PS384 PS512 RS256 RS384 RS512 none"`
+	Key           string `validate:"required"`
+	KeyFormat     string `validate:"oneof=json pem"`
+	MatchKeyID    bool   `validate:"-"`
+	InputFilePath string `validate:"-"`
+	Output        string `validate:"-"`
+}
+
+func newJWSVerifier(cmd *cobra.Command, args []string) (*jwsVerifier, error) {
+	algorithm, err := cmd.Flags().GetString("algorithm")
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := cmd.Flags().GetString("key")
+	if err != nil {
+		return nil, err
+	}
+
+	keyFormat, err := cmd.Flags().GetString("key-format")
+	if err != nil {
+		return nil, err
+	}
+
+	matchKeyID, err := cmd.Flags().GetBool("match-kid")
+	if err != nil {
+		return nil, err
+	}
+
+	inputFilePath := ""
+	if len(args) != 0 {
+		inputFilePath = args[0]
+	}
+
+	output, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return nil, err
+	}
+
+	return &jwsVerifier{
+		Algorithm:     algorithm,
+		Key:           key,
+		KeyFormat:     keyFormat,
+		MatchKeyID:    matchKeyID,
+		InputFilePath: inputFilePath,
+		Output:        output,
+	}, nil
+}
+
+func (j *jwsVerifier) valid() error {
+	validate := validator.New()
+	if err := validate.Struct(j); err != nil {
+		var e error
+		for _, v := range err.(validator.ValidationErrors) {
+			filedName := v.Field()
+
+			switch filedName {
+			case "Algorithm":
+				e = errors.Join(e, ErrInvalidAlgorithm)
+			case "Key":
+				e = errors.Join(e, ErrRequireKeyFile)
+			case "KeyFormat":
+				e = errors.Join(e, ErrInvalidKeyFormat)
+			}
+		}
+		return e
+	}
+	return nil
+}
+
+func runJWSVerify(cmd *cobra.Command, args []string) error {
+	jwsVerifier, err := newJWSVerifier(cmd, args)
+	if err != nil {
+		return err
+	}
+
+	if err = jwsVerifier.valid(); err != nil {
+		return err
+	}
+	return jwsVerifier.verify()
+}
+
+func (j *jwsVerifier) verify() error {
+	src, err := openInputFile(j.InputFilePath)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if e := src.Close(); e != nil {
+			err = errors.Join(err, e)
+		}
+	}()
+
+	buf, err := io.ReadAll(src)
+	if err != nil {
+		return wrap(ErrReadFile, err.Error())
+	}
+
+	keyset, err := getKeyFile(j.Key, j.KeyFormat)
+	if err != nil {
+		return err
+	}
+
+	output, err := openOutputFile(j.Output)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if e := output.Close(); e != nil {
+			err = errors.Join(err, e)
+		}
+	}()
+
+	return j.writeVerifyResult(output, buf, keyset)
+}
+
+func (j *jwsVerifier) writeVerifyResult(w io.Writer, jwsMessage []byte, keyset jwk.Set) error {
+	if j.MatchKeyID {
+		payload, err := jws.Verify(jwsMessage, jws.WithKeySet(keyset))
+		if err != nil {
+			return wrap(ErrVerifyJWSMessage, err.Error())
+		}
+		fmt.Fprintf(w, "%s", payload)
+		return nil
+	}
+
+	if j.Algorithm == "" {
+		return ErrEmptyAlogorithm
+	}
+
+	var alg jwa.SignatureAlgorithm
+	if err := alg.Accept(j.Algorithm); err != nil {
+		return wrap(ErrInvalidAlgorithm, err.Error())
+	}
+
+	ctx := context.Background()
+	for iter := keyset.Keys(ctx); iter.Next(ctx); {
+		pair := iter.Pair()
+		key := pair.Value.(jwk.Key)
+		payload, err := jws.Verify(jwsMessage, jws.WithKey(alg, key))
+		if err != nil {
+			return wrap(ErrVerifyJWSMessage, err.Error())
+		}
+		fmt.Fprintf(w, "%s", payload)
+	}
+	return nil
 }
