@@ -13,13 +13,15 @@ The jose command is intended to be a derivative of jwx commands with different f
 ## How to install
 ### Use "go install"
 If you does not have the golang development environment installed on your system, please install golang from the golang official website.
-
+```
 $ go install github.com/nao1215/jose@latest
+```
 
 ### For Mac user (M1/M2)
+```
 $ brew tap nao1215/tap
 $ brew install nao1215/tap/jose
-
+```
 
 ### Install from Package or Binary
 [The release page](https://github.com/nao1215/jose/releases) contains packages in .deb, .rpm, and .apk formats. gup command uses the go command internally, so the golang installation is required.
