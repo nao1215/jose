@@ -31,7 +31,7 @@ func newJWSParseCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "parse",
 		Short: "Parse JWS mesage",
-		Long: ` Parse FILE and display information about a JWS message.
+		Long: `Parse FILE and display information about a JWS message.
 Use "-" as FILE to read from STDIN.`,
 		RunE: runJWSParse,
 	}
@@ -253,17 +253,18 @@ func (j *jwsSigner) signer() error {
 }
 
 func (j *jwsSigner) signOptions(alg jwa.KeyAlgorithm, key interface{}) ([]jws.SignOption, error) {
+	var options []jws.SignOption
+	options = append(options, jws.WithKey(alg, key))
+
 	if j.Header == "" {
-		return []jws.SignOption{}, nil
+		return options, nil
 	}
 
-	var options []jws.SignOption
 	h := jws.NewHeaders()
 	if err := json.Unmarshal([]byte(j.Header), h); err != nil {
 		return nil, wrap(ErrParseHeader, err.Error())
 	}
 	options = append(options, jws.WithHeaders(h))
-	options = append(options, jws.WithKey(alg, key))
 
 	return options, nil
 }
@@ -272,7 +273,7 @@ func newJWSVerifyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "verify",
 		Short: "Verify JWS messages",
-		Long: ` Parses a JWS message in FILE, and verifies using the specified method.
+		Long: `Parses a JWS message in FILE, and verifies using the specified method.
 Use "-" as FILE to read from STDIN.
 
 By default the user is responsible for providing the algorithm to
