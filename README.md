@@ -77,7 +77,110 @@ KcI48LscuQT0Q0ROWdWLnpPJe/Zags78zSkQT053rLCn6aceO5cdY6o=
 ```
 
 ### jose jws - Parses the given JWS message, and prints out the content in a human-redable format
-[WIP] 
+### jose jws parse
+Parses the given JWS message, and prints out the content in a human-redable format.
+**parse SYNOPSIS**
+```
+Parse FILE and display information about a JWS message.
+Use "-" as FILE to read from STDIN.
+
+Usage:
+  jose jws parse [flags] FILE
+```
+
+**parse usage**
+```
+※ JWS to be parsed
+$ cat cmd/testdata/jws/sample.jws 
+ewogICJhbGciOiAiUlMyNTYiLAogICJraWQiOiAiMTMzNzQ3MTQxMjU1IiwKICAiaWF0IjogMCwKICAiaXNzIjogIkM9R0IsIEw9TG9uZG9uLCBPVT1OdWFwYXkgQVBJLCBPPU51YXBheSwgQ049eWJvcXlheTkycSIsCiAgImI2NCI6IGZhbHNlLAogICJjcml0IjogWwogICAgImlhdCIsCiAgICAiaXNzIiwKICAgICJiNjQiCiAgXQp9..d_cZ46lwNiaFHAu_saC-Zz4rSzNbevWirO94EmBlbOwkB1L78vGbAnNjUsmFSU7t_HhL-cyMiQUDyRWswsEnlDljJsRi8s8ft48ipy2SMuZrjPpyYYMgink8nZZK7l-eFJcTiS9ZWezAAXF_IJFXSTO5ax9z6xty3zTNPNMV9W7aH8fEAvbUIiueOhH5xNHcsuqlOGygKdFz2rbjTGffoE_6zS4Dry-uX5mts2duLorobUimGsdlUcSM6P6vZEtcXaJCdjrT9tuFMh4CkX9nqk19Bq2z3i-SX4JCPvhD2r3ghRmX0gG08UcvyFVbrnVZJnpl4MU8V4Nr3-2M5URZOg
+
+$ jose jws parse cmd/testdata/jws/sample.jws 
+{
+    "payload": "",
+    "protected": "eyJhbGciOiJSUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiaWF0IiwiaXNzIiwiYjY0Il0sImlhdCI6MCwiaXNzIjoiQz1HQiwgTD1Mb25kb24sIE9VPU51YXBheSBBUEksIE89TnVhcGF5LCBDTj15Ym9xeWF5OTJxIiwia2lkIjoiMTMzNzQ3MTQxMjU1In0",
+    "signature": "d_cZ46lwNiaFHAu_saC-Zz4rSzNbevWirO94EmBlbOwkB1L78vGbAnNjUsmFSU7t_HhL-cyMiQUDyRWswsEnlDljJsRi8s8ft48ipy2SMuZrjPpyYYMgink8nZZK7l-eFJcTiS9ZWezAAXF_IJFXSTO5ax9z6xty3zTNPNMV9W7aH8fEAvbUIiueOhH5xNHcsuqlOGygKdFz2rbjTGffoE_6zS4Dry-uX5mts2duLorobUimGsdlUcSM6P6vZEtcXaJCdjrT9tuFMh4CkX9nqk19Bq2z3i-SX4JCPvhD2r3ghRmX0gG08UcvyFVbrnVZJnpl4MU8V4Nr3-2M5URZOg"
+}
+Signature 0: {
+    "alg": "RS256",
+    "b64": false,
+    "crit": [
+        "iat",
+        "iss",
+        "b64"
+    ],
+    "iat": 0,
+    "iss": "C=GB, L=London, OU=Nuapay API, O=Nuapay, CN=yboqyay92q",
+    "kid": "133747141255"
+}
+```
+
+### jose jws verify
+Parses a JWS message in FILE, and verifies using the specified method.Use "-" as FILE to read from STDIN.
+
+By default the user is responsible for providing the algorithm to
+use to verify the signature. This is because we can not safely rely
+on the "alg" field of the JWS message to deduce which key to use.
+See https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/
+ 
+The alternative is to match a key based on explicitly specified key ID ("kid"). In this case the following conditions must be met for a successful verification:
+
+  (1) JWS message must list the key ID that it expects
+  (2) At least one of the provided JWK must contain the same key ID
+  (3) The same key must also contain the "alg" field 
+
+Therefore, the following key may be able to successfully verify a JWS message using "--match-kid":
+
+  { "typ": "oct", "alg": "H256", "kid": "mykey", .... }
+
+### jose jws sign
+Creates a signed JWS message in compact format from a key and payload.
+
+**sign SYNOPSIS**
+```
+Usage:
+  jose jws sign [flags]
+
+Flags:
+  -a, --algorithm string    algorithm to use in single key mode (default "none")
+  -H, --header string       header object to inject into JWS message protected header
+  -h, --help                help for sign
+  -k, --key string          file name that contains the key to use. single JWK or JWK set
+  -F, --key-format string   format of the store key (json/pem) (default "json")
+  -o, --output string       output to file (default "-")
+```
+
+**sign usage**
+```
+$ cat cmd/testdata/jwe/payload.txt
+Hello, World!
+
+$ cat cmd/testdata/jwe/ec.jwk
+{
+    "crv": "P-256",
+    "d": "vdX2dzkoF1wxYHYWDuTvSs0NHRcKSHz1ThgkhBerlpE",
+    "kty": "EC",
+    "x": "XfXquPuOb7tP3n9J45U22yvHGyR4GUKsU475LOExrfg",
+    "y": "3bYyiO-bTS0RYnKaKA8ugmBU6VMx3QuciqEKL9Vwrd0"
+}
+
+$ jose jws sign --key cmd/testdata/jwe/ec.jwk --algorithm ES256 cmd/testdata/jwe/payload.txt
+eyJhbGciOiJFUzI1NiJ9.SGVsbG8sIFdvcmxkIQ.HzKoOIfguqaZy2SYB6mB92ztntoTMqu-7eIykGuPa4GukC0MIPhNnHURuJIxpAKtDizAt6p_YwMnvQowYntCLQ
+```
+
+**verify SYNOPSIS**
+```
+Usage:
+  jose jws verify [flags]
+
+Flags:
+  -a, --algorithm string    algorithm to use in single key mode (default "none")
+  -h, --help                help for verify
+  -k, --key string          file name that contains the key to use. single JWK or JWK set
+  -F, --key-format string   format of the store key (json/pem) (default "json")
+  -m, --match-kid           instead of using alg, attempt to verify only if the key ID (kid) matches
+  -o, --output string       output to file (default "-")
+```
+
 ### jose jwe encrypt/decrypt
 **encrypt SYNOPSIS**
 ```

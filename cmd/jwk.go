@@ -33,7 +33,7 @@ func newJWKGenerateCmd() *cobra.Command {
 		Use:     "generate",
 		Aliases: []string{"gen"},
 		Short:   "Generate a private JWK (JSON Web Key)",
-		RunE:    runGenerate,
+		RunE:    runJWKGenerate,
 	}
 
 	cmd.Flags().StringP("curve", "c", "", "elliptic curve type for EC or OKP keys (Ed25519/Ed448/P-256/P-384/P-521/X25519/X448)")
@@ -289,7 +289,7 @@ func (j *jwkGenerater) writeJWKSetByPemByJSONFormat(w io.Writer) error {
 	return nil
 }
 
-func runGenerate(cmd *cobra.Command, _ []string) error {
+func runJWKGenerate(cmd *cobra.Command, _ []string) error {
 	generator, err := newJWKGenerater(cmd)
 	if err != nil {
 		return err

@@ -17,11 +17,11 @@ const (
 func writeJSON(w io.Writer, v interface{}) error {
 	buf, err := json.MarshalIndent(v, "", "    ")
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrSerializeJOSN, err.Error())
+		return wrap(ErrSerializeJOSN, err.Error())
 	}
 
 	if _, err := w.Write(append(buf, '\n')); err != nil {
-		return fmt.Errorf("%w: %s", ErrWriteJSON, err.Error())
+		return wrap(ErrWriteJSON, err.Error())
 	}
 	return nil
 }
