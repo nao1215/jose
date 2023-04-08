@@ -23,6 +23,7 @@ var (
 	ErrEmptyKey                 = errors.New("key did not exist after key generation")
 	ErrNotContainKey            = errors.New("jwk file must contain exactly one key")
 	ErrParseKey                 = errors.New("failed to parse key")
+	ErrParseMessage             = errors.New("failed to parse message")
 	ErrRetriveKey               = errors.New("failed to retrieve public key")
 	ErrSerializeJOSN            = errors.New("failed to serialize to JSON")
 	ErrWriteJSON                = errors.New("failed to write JSON")

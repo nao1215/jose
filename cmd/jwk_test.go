@@ -8,7 +8,7 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 
-func Test_newJwkGenerater(t *testing.T) {
+func TestNewJwkGenerater(t *testing.T) {
 	t.Parallel()
 	t.Run("Get all options", func(t *testing.T) {
 		t.Parallel()
