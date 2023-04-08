@@ -23,6 +23,7 @@ func newJWSCmd() *cobra.Command {
 
 	cmd.AddCommand(newJWSParseCmd())
 	cmd.AddCommand(newJWSSignCmd())
+	cmd.AddCommand(newJWSVerifyCmd())
 	return cmd
 }
 
@@ -449,7 +450,11 @@ func (j *jwsVerifier) writeVerifyResult(w io.Writer, jwsMessage []byte, keyset j
 	ctx := context.Background()
 	for iter := keyset.Keys(ctx); iter.Next(ctx); {
 		pair := iter.Pair()
-		key := pair.Value.(jwk.Key)
+		key, ok := pair.Value.(jwk.Key)
+		if !ok {
+			return wrap(ErrVerifyJWSMessage, "type assertion")
+		}
+
 		payload, err := jws.Verify(jwsMessage, jws.WithKey(alg, key))
 		if err != nil {
 			return wrap(ErrVerifyJWSMessage, err.Error())
