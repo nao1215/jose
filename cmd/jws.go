@@ -12,6 +12,7 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jws"
+	"github.com/nao1215/gorky/file"
 	"github.com/spf13/cobra"
 )
 
@@ -39,29 +40,22 @@ Use "-" as FILE to read from STDIN.`,
 }
 
 type jwsParser struct {
-	InputFilePath string `validate:"-"`
+	jws []byte `validate:"-"`
 }
 
 func newJWSParser(args []string) (*jwsParser, error) {
-	inputFilePath := ""
-	if len(args) != 0 {
-		inputFilePath = args[0]
+	if len(args) == 0 {
+		return nil, errors.New("you must specify file or jws token")
+	}
+	inputFilePath := args[0]
+
+	if !file.IsFile(inputFilePath) && inputFilePath != "-" {
+		return &jwsParser{jws: []byte(inputFilePath)}, nil
 	}
 
-	return &jwsParser{
-		InputFilePath: inputFilePath,
-	}, nil
-}
-
-func runJWSParse(_ *cobra.Command, args []string) error {
-	jwsParser, err := newJWSParser(args)
+	src, err := openInputFile(inputFilePath)
 	if err != nil {
-		return err
-	}
-
-	src, err := openInputFile(jwsParser.InputFilePath)
-	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() {
 		if e := src.Close(); e != nil {
@@ -71,14 +65,24 @@ func runJWSParse(_ *cobra.Command, args []string) error {
 
 	buf, err := io.ReadAll(src)
 	if err != nil {
-		return wrap(ErrReadFile, err.Error())
+		return nil, wrap(ErrReadFile, err.Error())
+	}
+	return &jwsParser{jws: buf}, nil
+}
+
+func runJWSParse(_ *cobra.Command, args []string) error {
+	jwsParser, err := newJWSParser(args)
+	if err != nil {
+		return err
 	}
 
-	msg, err := jws.Parse(buf)
+	msg, err := jws.Parse(jwsParser.jws)
 	if err != nil {
 		return wrap(ErrParseMessage, err.Error())
 	}
+	fmt.Fprintf(os.Stdout, "Payload: %s\n", msg.Payload())
 
+	fmt.Fprint(os.Stdout, "JWS: ")
 	if err := writeJSON(os.Stdout, msg); err != nil {
 		return err
 	}

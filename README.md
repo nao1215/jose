@@ -85,32 +85,35 @@ Parse FILE and display information about a JWS message.
 Use "-" as FILE to read from STDIN.
 
 Usage:
-  jose jws parse [flags] FILE
+  jose jws parse [flags] FILE (or JWS text)
 ```
 
 **parse usage**
 ```
 ※ JWS to be parsed
 $ cat cmd/testdata/jws/sample.jws 
-ewogICJhbGciOiAiUlMyNTYiLAogICJraWQiOiAiMTMzNzQ3MTQxMjU1IiwKICAiaWF0IjogMCwKICAiaXNzIjogIkM9R0IsIEw9TG9uZG9uLCBPVT1OdWFwYXkgQVBJLCBPPU51YXBheSwgQ049eWJvcXlheTkycSIsCiAgImI2NCI6IGZhbHNlLAogICJjcml0IjogWwogICAgImlhdCIsCiAgICAiaXNzIiwKICAgICJiNjQiCiAgXQp9..d_cZ46lwNiaFHAu_saC-Zz4rSzNbevWirO94EmBlbOwkB1L78vGbAnNjUsmFSU7t_HhL-cyMiQUDyRWswsEnlDljJsRi8s8ft48ipy2SMuZrjPpyYYMgink8nZZK7l-eFJcTiS9ZWezAAXF_IJFXSTO5ax9z6xty3zTNPNMV9W7aH8fEAvbUIiueOhH5xNHcsuqlOGygKdFz2rbjTGffoE_6zS4Dry-uX5mts2duLorobUimGsdlUcSM6P6vZEtcXaJCdjrT9tuFMh4CkX9nqk19Bq2z3i-SX4JCPvhD2r3ghRmX0gG08UcvyFVbrnVZJnpl4MU8V4Nr3-2M5URZOg
+eyJhbGciOiJFUzI1NiJ9.SGVsbG8sIFdvcmxkIQ.YP7wVtRe3TxLFkeJ2ei83f67ZT5ajMUSu2GZhTYFeFR5R2yu1vv1emH3ikhBk09czvFFaA41zDBT-KsB1EqphA
 
 $ jose jws parse cmd/testdata/jws/sample.jws 
-{
-    "payload": "",
-    "protected": "eyJhbGciOiJSUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiaWF0IiwiaXNzIiwiYjY0Il0sImlhdCI6MCwiaXNzIjoiQz1HQiwgTD1Mb25kb24sIE9VPU51YXBheSBBUEksIE89TnVhcGF5LCBDTj15Ym9xeWF5OTJxIiwia2lkIjoiMTMzNzQ3MTQxMjU1In0",
-    "signature": "d_cZ46lwNiaFHAu_saC-Zz4rSzNbevWirO94EmBlbOwkB1L78vGbAnNjUsmFSU7t_HhL-cyMiQUDyRWswsEnlDljJsRi8s8ft48ipy2SMuZrjPpyYYMgink8nZZK7l-eFJcTiS9ZWezAAXF_IJFXSTO5ax9z6xty3zTNPNMV9W7aH8fEAvbUIiueOhH5xNHcsuqlOGygKdFz2rbjTGffoE_6zS4Dry-uX5mts2duLorobUimGsdlUcSM6P6vZEtcXaJCdjrT9tuFMh4CkX9nqk19Bq2z3i-SX4JCPvhD2r3ghRmX0gG08UcvyFVbrnVZJnpl4MU8V4Nr3-2M5URZOg"
+Payload: Hello, World!
+JWS: {
+    "payload": "SGVsbG8sIFdvcmxkIQ",
+    "protected": "eyJhbGciOiJFUzI1NiJ9",
+    "signature": "YP7wVtRe3TxLFkeJ2ei83f67ZT5ajMUSu2GZhTYFeFR5R2yu1vv1emH3ikhBk09czvFFaA41zDBT-KsB1EqphA"
 }
 Signature 0: {
-    "alg": "RS256",
-    "b64": false,
-    "crit": [
-        "iat",
-        "iss",
-        "b64"
-    ],
-    "iat": 0,
-    "iss": "C=GB, L=London, OU=Nuapay API, O=Nuapay, CN=yboqyay92q",
-    "kid": "133747141255"
+    "alg": "ES256"
+}
+ 
+$ jose jws parse eyJhbGciOiJFUzI1NiJ9.SGVsbG8sIFdvcmxkIQ.YP7wVtRe3TxLFkeJ2ei83f67ZT5ajMUSu2GZhTYFeFR5R2yu1vv1emH3ikhBk09czvFFaA41zDBT-KsB1EqphA
+Payload: Hello, World!
+JWS: {
+    "payload": "SGVsbG8sIFdvcmxkIQ",
+    "protected": "eyJhbGciOiJFUzI1NiJ9",
+    "signature": "YP7wVtRe3TxLFkeJ2ei83f67ZT5ajMUSu2GZhTYFeFR5R2yu1vv1emH3ikhBk09czvFFaA41zDBT-KsB1EqphA"
+}
+Signature 0: {
+    "alg": "ES256"
 }
 ```
 
@@ -124,9 +127,9 @@ See https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/
  
 The alternative is to match a key based on explicitly specified key ID ("kid"). In this case the following conditions must be met for a successful verification:
 
-  (1) JWS message must list the key ID that it expects
-  (2) At least one of the provided JWK must contain the same key ID
-  (3) The same key must also contain the "alg" field 
+  1. JWS message must list the key ID that it expects
+  2. At least one of the provided JWK must contain the same key ID
+  3. The same key must also contain the "alg" field 
 
 Therefore, the following key may be able to successfully verify a JWS message using "--match-kid":
 
