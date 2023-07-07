@@ -32,46 +32,57 @@ func newJWSParseCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "parse",
 		Short: "Parse JWS mesage",
-		Long: `Parse FILE and display information about a JWS message.
+		Long: `Parse JWS and display payload in the JWS message.
 Use "-" as FILE to read from STDIN.`,
 		RunE: runJWSParse,
 	}
+	cmd.Flags().BoolP("all", "a", false, "print all information (payload, header, signature)")
 	return cmd
 }
 
 type jwsParser struct {
 	jws []byte `validate:"-"`
+	all bool   `validate:"-"`
 }
 
-func newJWSParser(args []string) (*jwsParser, error) {
+func newJWSParser(cmd *cobra.Command, args []string) (*jwsParser, error) {
 	if len(args) == 0 {
 		return nil, errors.New("you must specify file or jws token")
 	}
 	inputFilePath := args[0]
 
+	all, err := cmd.Flags().GetBool("all")
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "can not parse command line argument (payload", err)
+	}
+
+	var jws []byte
 	if !file.IsFile(inputFilePath) && inputFilePath != "-" {
-		return &jwsParser{jws: []byte(inputFilePath)}, nil
-	}
-
-	src, err := openInputFile(inputFilePath)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if e := src.Close(); e != nil {
-			err = errors.Join(err, e)
+		jws = []byte(inputFilePath)
+	} else {
+		src, err := openInputFile(inputFilePath)
+		if err != nil {
+			return nil, err
 		}
-	}()
-
-	buf, err := io.ReadAll(src)
-	if err != nil {
-		return nil, wrap(ErrReadFile, err.Error())
+		defer func() {
+			if e := src.Close(); e != nil {
+				err = errors.Join(err, e)
+			}
+		}()
+		jws, err = io.ReadAll(src)
+		if err != nil {
+			return nil, wrap(ErrReadFile, err.Error())
+		}
 	}
-	return &jwsParser{jws: buf}, nil
+
+	return &jwsParser{
+		jws: jws,
+		all: all,
+	}, nil
 }
 
-func runJWSParse(_ *cobra.Command, args []string) error {
-	jwsParser, err := newJWSParser(args)
+func runJWSParse(cmd *cobra.Command, args []string) error {
+	jwsParser, err := newJWSParser(cmd, args)
 	if err != nil {
 		return err
 	}
@@ -80,6 +91,16 @@ func runJWSParse(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return wrap(ErrParseMessage, err.Error())
 	}
+
+	if jwsParser.all {
+		return printAll(msg)
+	}
+	fmt.Fprintf(os.Stdout, "%s", string(msg.Payload()))
+	return nil
+}
+
+// printAll prints all information about JWS message. It prints payload, header and signature.
+func printAll(msg *jws.Message) error {
 	fmt.Fprintf(os.Stdout, "Payload: %s\n", msg.Payload())
 
 	fmt.Fprint(os.Stdout, "JWS: ")

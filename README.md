@@ -81,11 +81,15 @@ KcI48LscuQT0Q0ROWdWLnpPJe/Zags78zSkQT053rLCn6aceO5cdY6o=
 Parses the given JWS message, and prints out the content in a human-redable format.
 **parse SYNOPSIS**
 ```
-Parse FILE and display information about a JWS message.
+Parse JWS and display payload in the JWS message.
 Use "-" as FILE to read from STDIN.
 
 Usage:
-  jose jws parse [flags] FILE (or JWS text)
+  jose jws parse [flags]
+
+Flags:
+  -a, --all    print all information (payload, header, signature)
+  -h, --help   help for parse
 ```
 
 **parse usage**
@@ -94,7 +98,8 @@ Usage:
 $ cat cmd/testdata/jws/sample.jws 
 eyJhbGciOiJFUzI1NiJ9.SGVsbG8sIFdvcmxkIQ.YP7wVtRe3TxLFkeJ2ei83f67ZT5ajMUSu2GZhTYFeFR5R2yu1vv1emH3ikhBk09czvFFaA41zDBT-KsB1EqphA
 
-$ jose jws parse cmd/testdata/jws/sample.jws 
+※ Read JWS from file and print all information
+$ jose jws parse --all cmd/testdata/jws/sample.jws
 Payload: Hello, World!
 JWS: {
     "payload": "SGVsbG8sIFdvcmxkIQ",
@@ -105,16 +110,9 @@ Signature 0: {
     "alg": "ES256"
 }
  
-$ jose jws parse eyJhbGciOiJFUzI1NiJ9.SGVsbG8sIFdvcmxkIQ.YP7wVtRe3TxLFkeJ2ei83f67ZT5ajMUSu2GZhTYFeFR5R2yu1vv1emH3ikhBk09czvFFaA41zDBT-KsB1EqphA
-Payload: Hello, World!
-JWS: {
-    "payload": "SGVsbG8sIFdvcmxkIQ",
-    "protected": "eyJhbGciOiJFUzI1NiJ9",
-    "signature": "YP7wVtRe3TxLFkeJ2ei83f67ZT5ajMUSu2GZhTYFeFR5R2yu1vv1emH3ikhBk09czvFFaA41zDBT-KsB1EqphA"
-}
-Signature 0: {
-    "alg": "ES256"
-}
+※ Read JWS from argument and print only payload
+$ jose jws parse eyJhbGciOiJFUzI1NiJ9.SGVsbG8sIFdvcmxkIQ.
+Hello, World!
 ```
 
 ### jose jws verify
