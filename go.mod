@@ -3,7 +3,7 @@ module github.com/nao1215/jose
 go 1.20
 
 require (
-	github.com/charmbracelet/log v0.2.4
+	github.com/charmbracelet/log v0.2.5
 	github.com/go-playground/validator/v10 v10.15.5
 	github.com/google/go-cmp v0.5.9
 	github.com/lestrrat-go/jwx v1.2.26
