@@ -7,7 +7,7 @@ require (
 	github.com/go-playground/validator/v10 v10.18.0
 	github.com/google/go-cmp v0.6.0
 	github.com/lestrrat-go/jwx v1.2.26
-	github.com/lestrrat-go/jwx/v2 v2.0.19
+	github.com/lestrrat-go/jwx/v2 v2.0.20
 	github.com/nao1215/gorky v0.2.1
 	github.com/spf13/cobra v1.8.0
 )
