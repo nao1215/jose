@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/charmbracelet/log v0.4.0
-	github.com/go-playground/validator/v10 v10.19.0
+	github.com/go-playground/validator/v10 v10.20.0
 	github.com/google/go-cmp v0.6.0
 	github.com/lestrrat-go/jwx v1.2.29
 	github.com/lestrrat-go/jwx/v2 v2.0.21
