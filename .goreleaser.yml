@@ -45,3 +45,11 @@ nfpms:
       - deb
       - rpm
       - apk
+brews:
+  - name: jose
+    description: jose - CLI tool for JOSE (JSON Object Signing and Encryption)
+    license: MIT
+    repository:
+      owner: nao1215
+      name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
