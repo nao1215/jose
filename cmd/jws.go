@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,9 +8,9 @@ import (
 	"os"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/lestrrat-go/jwx/v2/jwa"
-	"github.com/lestrrat-go/jwx/v2/jwk"
-	"github.com/lestrrat-go/jwx/v2/jws"
+	"github.com/lestrrat-go/jwx/v4/jwa"
+	"github.com/lestrrat-go/jwx/v4/jwk"
+	"github.com/lestrrat-go/jwx/v4/jws"
 	"github.com/nao1215/gorky/file"
 	"github.com/spf13/cobra"
 )
@@ -139,7 +138,7 @@ Currently, only single key signature mode is supported.
 }
 
 type jwsSigner struct {
-	Algorithm     string `validate:"required,oneof=ES256 ES256K ES384 ES512 EdDSA HS256 HS384 HS512 PS256 PS384 PS512 RS256 RS384 RS512"`
+	Algorithm     string `validate:"required,oneof=ES256 ES384 ES512 EdDSA HS256 HS384 HS512 PS256 PS384 PS512 RS256 RS384 RS512"`
 	Key           string `validate:"required"`
 	KeyFormat     string `validate:"oneof=json pem"`
 	Header        string `validate:"-"`
@@ -247,8 +246,8 @@ func (j *jwsSigner) signer() error {
 	}
 	key, _ := keyset.Key(0)
 
-	var alg jwa.SignatureAlgorithm
-	if err := alg.Accept(j.Algorithm); err != nil {
+	alg, ok := jwa.LookupSignatureAlgorithm(j.Algorithm)
+	if !ok {
 		return wrap(ErrInvalidAlgorithm, "input value="+j.Algorithm)
 	}
 
@@ -278,20 +277,18 @@ func (j *jwsSigner) signer() error {
 }
 
 func (j *jwsSigner) signOptions(alg jwa.KeyAlgorithm, key interface{}) ([]jws.SignOption, error) {
-	var options []jws.SignOption
-	options = append(options, jws.WithKey(alg, key))
-
-	if j.Header == "" {
-		return options, nil
+	// v4 moved protected headers into a sub-option of WithKey instead of a
+	// standalone SignOption.
+	var subopts []jws.WithKeySuboption
+	if j.Header != "" {
+		h := jws.NewHeaders()
+		if err := json.Unmarshal([]byte(j.Header), h); err != nil {
+			return nil, wrap(ErrParseHeader, err.Error())
+		}
+		subopts = append(subopts, jws.WithProtectedHeaders(h))
 	}
 
-	h := jws.NewHeaders()
-	if err := json.Unmarshal([]byte(j.Header), h); err != nil {
-		return nil, wrap(ErrParseHeader, err.Error())
-	}
-	options = append(options, jws.WithHeaders(h))
-
-	return options, nil
+	return []jws.SignOption{jws.WithKey(alg, key, subopts...)}, nil
 }
 
 func newJWSVerifyCmd() *cobra.Command {
@@ -338,7 +335,7 @@ either "alg" or "kid"
 }
 
 type jwsVerifier struct {
-	Algorithm     string `validate:"required_without=MatchKeyID,omitempty,oneof=ES256 ES256K ES384 ES512 EdDSA HS256 HS384 HS512 PS256 PS384 PS512 RS256 RS384 RS512"`
+	Algorithm     string `validate:"required_without=MatchKeyID,omitempty,oneof=ES256 ES384 ES512 EdDSA HS256 HS384 HS512 PS256 PS384 PS512 RS256 RS384 RS512"`
 	Key           string `validate:"required"`
 	KeyFormat     string `validate:"oneof=json pem"`
 	MatchKeyID    bool   `validate:"-"`
@@ -459,7 +456,9 @@ func (j *jwsVerifier) writeVerifyResult(w io.Writer, jwsMessage []byte, keyset j
 		// A JWS message signed with a private key must be verified with the
 		// corresponding public key. When the user supplies a private JWK (the
 		// self-signed case), derive the public keys so verification succeeds.
-		pubset, err := jwk.PublicSetOf(keyset)
+		// v4 rejects symmetric keys in PublicSetOf by default; allow them so a
+		// match-kid verification with an oct (HMAC) key still works.
+		pubset, err := jwk.PublicSetOf(keyset, jwk.WithAllowSymmetric(true))
 		if err != nil {
 			return wrap(ErrVerifyJWSMessage, err.Error())
 		}
@@ -476,25 +475,17 @@ func (j *jwsVerifier) writeVerifyResult(w io.Writer, jwsMessage []byte, keyset j
 		return ErrEmptyAlogorithm
 	}
 
-	var alg jwa.SignatureAlgorithm
-	if err := alg.Accept(j.Algorithm); err != nil {
-		return wrap(ErrInvalidAlgorithm, err.Error())
+	alg, ok := jwa.LookupSignatureAlgorithm(j.Algorithm)
+	if !ok {
+		return wrap(ErrInvalidAlgorithm, j.Algorithm)
 	}
 
 	// Try every key in the set. A JWK set may legitimately hold several keys
 	// where only one matches the signature, so a failure on one key must not
 	// abort verification: keep going until a key verifies, and only report an
 	// error when none of them do.
-	ctx := context.Background()
 	var lastErr error
-	for iter := keyset.Keys(ctx); iter.Next(ctx); {
-		pair := iter.Pair()
-		key, ok := pair.Value.(jwk.Key)
-		if !ok {
-			lastErr = wrap(ErrVerifyJWSMessage, "type assertion")
-			continue
-		}
-
+	for _, key := range keyset.All() {
 		// Verify with the public key. PublicKeyOf returns the key as-is for
 		// symmetric keys and the public counterpart for private keys, so a
 		// self-signed message created from a private JWK verifies correctly.

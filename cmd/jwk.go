@@ -1,20 +1,20 @@
 package cmd
 
 import (
+	"crypto/ecdh"
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"errors"
-	"fmt"
 	"io"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/lestrrat-go/jwx/v2/jwa"
-	"github.com/lestrrat-go/jwx/v2/jwk"
-	"github.com/lestrrat-go/jwx/v2/x25519"
+	"github.com/lestrrat-go/jwx/v4/jwa"
+	"github.com/lestrrat-go/jwx/v4/jwk"
+	"github.com/lestrrat-go/jwx/v4/jwk/jwkbb"
 	"github.com/spf13/cobra"
 )
 
@@ -130,7 +130,7 @@ func (j *jwkGenerater) valid() error {
 // expressed in bits and only applies to RSA and oct keys; EC and OKP keys
 // ignore it because their length is fixed by the curve.
 func (j *jwkGenerater) validKeySize() error {
-	if j.KeyType != jwa.RSA.String() && j.KeyType != jwa.OctetSeq.String() {
+	if j.KeyType != jwa.RSA().String() && j.KeyType != jwa.OctetSeq().String() {
 		return nil
 	}
 	if j.KeySize < 256 || j.KeySize%8 != 0 {
@@ -144,14 +144,14 @@ func (j *jwkGenerater) validKeySize() error {
 // Ed25519/X25519; other key types do not use a curve.
 func (j *jwkGenerater) validCurve() error {
 	switch j.KeyType {
-	case jwa.EC.String():
+	case jwa.EC().String():
 		if j.Curve == "" {
 			return ErrRequireCurve
 		}
 		if !contains(availableCurves(), j.Curve) {
 			return wrap(ErrInvalidCurve, "EC supports "+strings.Join(availableCurves(), "/"))
 		}
-	case jwa.OKP.String():
+	case jwa.OKP().String():
 		if j.Curve == "" {
 			return ErrRequireCurve
 		}
@@ -165,25 +165,25 @@ func (j *jwkGenerater) validCurve() error {
 func (j *jwkGenerater) generate() (err error) {
 	var rawKey interface{}
 	switch j.KeyType {
-	case jwa.RSA.String():
+	case jwa.RSA().String():
 		if rawKey, err = j.generateRSA(); err != nil {
 			return err
 		}
-	case jwa.EC.String():
+	case jwa.EC().String():
 		if rawKey, err = j.generateECDSA(); err != nil {
 			return err
 		}
-	case jwa.OctetSeq.String():
+	case jwa.OctetSeq().String():
 		if rawKey, err = j.generateOctetSeq(); err != nil {
 			return err
 		}
-	case jwa.OKP.String():
+	case jwa.OKP().String():
 		if rawKey, err = j.generateOKP(); err != nil {
 			return err
 		}
 	}
 
-	key, err := jwk.FromRaw(rawKey)
+	key, err := jwk.Import[jwk.Key](rawKey)
 	if err != nil {
 		return wrap(ErrGenerateJWKFromRawKey, err.Error())
 	}
@@ -229,14 +229,15 @@ func (j *jwkGenerater) generateRSA() (interface{}, error) {
 
 func (j *jwkGenerater) generateECDSA() (interface{}, error) {
 	var curve elliptic.Curve
-	var curveAlogrithm jwa.EllipticCurveAlgorithm
-	if err := curveAlogrithm.Accept(j.Curve); err != nil {
-		return nil, wrap(fmt.Errorf("%w (ECDSA only support %s)", ErrInvalidCurve, strings.Join(availableCurves(), "/")), err.Error())
-	}
-
-	curve, ok := jwk.CurveForAlgorithm(curveAlogrithm)
-	if !ok {
-		return nil, fmt.Errorf("%w (ECDSA only support %s)", ErrInvalidCurve, strings.Join(availableCurves(), "/"))
+	switch j.Curve {
+	case "P-256":
+		curve = elliptic.P256()
+	case "P-384":
+		curve = elliptic.P384()
+	case "P-521":
+		curve = elliptic.P521()
+	default:
+		return nil, wrap(ErrInvalidCurve, "EC supports "+strings.Join(availableCurves(), "/"))
 	}
 
 	key, err := ecdsa.GenerateKey(curve, rand.Reader)
@@ -255,21 +256,18 @@ func (j *jwkGenerater) generateOctetSeq() (interface{}, error) {
 }
 
 func (j *jwkGenerater) generateOKP() (interface{}, error) {
-	var curveAlogrithm jwa.EllipticCurveAlgorithm
-	if err := curveAlogrithm.Accept(j.Curve); err != nil {
-		return nil, wrap(fmt.Errorf("%w (only support Ed25519/X25519)", ErrInvalidCurve), err.Error())
-	}
-
 	var rawKey interface{}
-	switch curveAlogrithm {
-	case jwa.Ed25519:
+	switch j.Curve {
+	case "Ed25519":
 		_, priv, err := ed25519.GenerateKey(rand.Reader)
 		if err != nil {
 			return nil, wrap(ErrGenerateEd25519, err.Error())
 		}
 		rawKey = priv
-	case jwa.X25519:
-		_, priv, err := x25519.GenerateKey(rand.Reader)
+	case "X25519":
+		// jwx v4 dropped its x25519 package; X25519 keys now come from the
+		// standard library's crypto/ecdh.
+		priv, err := ecdh.X25519().GenerateKey(rand.Reader)
 		if err != nil {
 			return nil, wrap(ErrGenerateX25519, err.Error())
 		}
@@ -294,7 +292,13 @@ func (j *jwkGenerater) writeJWKSet(w io.Writer) error {
 }
 
 func (j *jwkGenerater) writeJWKSetByPemFormat(w io.Writer) error {
-	buf, err := jwk.Pem(j.KeySet)
+	// jwx v4 removed jwk.Pem. PEM encoding now works on raw Go crypto keys, so
+	// export the set to raw keys and let jwkbb.EncodePEM frame them as X.509.
+	raws, err := jwk.ExportAll[any](j.KeySet)
+	if err != nil {
+		return wrap(ErrFormatKeyInPem, err.Error())
+	}
+	buf, err := jwkbb.EncodePEM(raws...)
 	if err != nil {
 		return wrap(ErrFormatKeyInPem, err.Error())
 	}

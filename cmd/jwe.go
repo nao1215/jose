@@ -7,9 +7,9 @@ import (
 	"io"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/lestrrat-go/jwx/v2/jwa"
-	"github.com/lestrrat-go/jwx/v2/jwe"
-	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/lestrrat-go/jwx/v4/jwa"
+	"github.com/lestrrat-go/jwx/v4/jwe"
+	"github.com/lestrrat-go/jwx/v4/jwk"
 	"github.com/spf13/cobra"
 )
 
@@ -148,19 +148,19 @@ func (j *jweEncrypter) encrypt() error {
 		return wrap(ErrReadFile, err.Error())
 	}
 
-	var keyenc jwa.KeyEncryptionAlgorithm
-	if err := keyenc.Accept(j.KeyEncryption); err != nil {
-		return wrap(ErrInvalidKeyEncryption, err.Error())
+	keyenc, ok := jwa.LookupKeyEncryptionAlgorithm(j.KeyEncryption)
+	if !ok {
+		return wrap(ErrInvalidKeyEncryption, j.KeyEncryption)
 	}
 
-	var contentEncrypt jwa.ContentEncryptionAlgorithm
-	if err := contentEncrypt.Accept(j.ContentEncryption); err != nil {
-		return wrap(ErrInvalidContentEncryption, err.Error())
+	contentEncrypt, ok := jwa.LookupContentEncryptionAlgorithm(j.ContentEncryption)
+	if !ok {
+		return wrap(ErrInvalidContentEncryption, j.ContentEncryption)
 	}
 
-	compress := jwa.NoCompress
+	compress := jwa.NoCompress()
 	if j.Compress {
-		compress = jwa.Deflate
+		compress = jwa.Deflate()
 	}
 
 	keyset, err := getKeyFile(j.Key, j.KeyFormat)
@@ -334,7 +334,8 @@ func (j *jweDecrypter) decrypt() error {
 func (j *jweDecrypter) decryptMessage(input []byte, key jwk.Key) ([]byte, error) {
 	if j.KeyEncryption == "" {
 		v, err := jwe.Decrypt(input, jwe.WithKeyProvider(jwe.KeyProviderFunc(func(_ context.Context, sink jwe.KeySink, r jwe.Recipient, _ *jwe.Message) error {
-			sink.Key(r.Headers().Algorithm(), key)
+			alg, _ := r.Headers().Algorithm()
+			sink.Key(alg, key)
 			return nil
 		})))
 		if err != nil {
@@ -343,9 +344,9 @@ func (j *jweDecrypter) decryptMessage(input []byte, key jwk.Key) ([]byte, error)
 		return v, nil
 	}
 
-	var keyenc jwa.KeyEncryptionAlgorithm
-	if err := keyenc.Accept(j.KeyEncryption); err != nil {
-		return nil, wrap(ErrInvalidKeyEncryption, err.Error())
+	keyenc, ok := jwa.LookupKeyEncryptionAlgorithm(j.KeyEncryption)
+	if !ok {
+		return nil, wrap(ErrInvalidKeyEncryption, j.KeyEncryption)
 	}
 	v, err := jwe.Decrypt(input, jwe.WithKey(keyenc, key))
 	if err != nil {

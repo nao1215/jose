@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/lestrrat-go/jwx/v4/jwk"
 )
 
 // genKey generates a JWK with the given parameters and writes it to a file in a
@@ -72,7 +72,7 @@ func octKeyFileWithKid(t testing.TB, alg, kid string) string {
 	for i := range raw {
 		raw[i] = byte(i + 1)
 	}
-	key, err := jwk.FromRaw(raw)
+	key, err := jwk.Import[jwk.Key](raw)
 	if err != nil {
 		t.Fatal(err)
 	}

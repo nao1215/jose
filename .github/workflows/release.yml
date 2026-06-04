@@ -5,6 +5,10 @@ on:
     tags:
       - "v*"
 
+env:
+  # jwx v4 uses encoding/json/v2, gated behind this experiment on Go 1.26.
+  GOEXPERIMENT: jsonv2
+
 jobs:
   release:
     name: Release

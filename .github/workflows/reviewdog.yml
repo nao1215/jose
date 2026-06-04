@@ -1,6 +1,10 @@
 name: reviewdog
 on: [pull_request]
 
+env:
+  # jwx v4 uses encoding/json/v2, gated behind this experiment on Go 1.26.
+  GOEXPERIMENT: jsonv2
+
 jobs:
   golangci-lint:
     name: golangci-lint
@@ -10,11 +14,17 @@ jobs:
         uses: actions/checkout@v6
         with:
           persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
       - name: golangci-lint
         uses: reviewdog/action-golangci-lint@v2
         with:
-          # .golangci.yml uses the v2 configuration schema.
-          golangci_lint_version: v2.5.0
+          # .golangci.yml uses the v2 configuration schema. Use the latest
+          # release so the linter is built with a Go toolchain new enough for
+          # the module's go 1.26 directive.
+          golangci_lint_version: latest
           reporter: github-pr-review
           level: warning
 

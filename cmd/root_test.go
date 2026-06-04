@@ -45,19 +45,19 @@ func TestExecute(t *testing.T) {
 			name:         "get key-types",
 			args:         []string{"jose", "jwa", "--key-type"},
 			wantExitCode: 0,
-			wantStdOut:   "EC\nOKP\nRSA\noct",
+			wantStdOut:   "AKP\nEC\nOKP\nRSA\noct",
 		},
 		{
 			name:         "get elliptic curve types",
 			args:         []string{"jose", "jwa", "--elliptic-curve"},
 			wantExitCode: 0,
-			wantStdOut:   "Ed25519\nEd448\nP-256\nP-384\nP-521\nX25519\nX448",
+			wantStdOut:   "Ed25519\nP-256\nP-384\nP-521\nX25519\nX448",
 		},
 		{
 			name:         "get key encryption algorithms",
 			args:         []string{"jose", "jwa", "--key-encryption"},
 			wantExitCode: 0,
-			wantStdOut:   "A128GCMKW\nA128KW\nA192GCMKW\nA192KW\nA256GCMKW\nA256KW\nECDH-ES\nECDH-ES+A128KW\nECDH-ES+A192KW\nECDH-ES+A256KW\nPBES2-HS256+A128KW\nPBES2-HS384+A192KW\nPBES2-HS512+A256KW\nRSA-OAEP\nRSA-OAEP-256\nRSA1_5\ndir",
+			wantStdOut:   "A128GCMKW\nA128KW\nA192GCMKW\nA192KW\nA256GCMKW\nA256KW\nECDH-ES\nECDH-ES+A128KW\nECDH-ES+A192KW\nECDH-ES+A256KW\nHPKE-0-KE\nHPKE-1-KE\nHPKE-2-KE\nHPKE-3-KE\nHPKE-4-KE\nHPKE-7-KE\nPBES2-HS256+A128KW\nPBES2-HS384+A192KW\nPBES2-HS512+A256KW\nRSA-OAEP\nRSA-OAEP-256\nRSA-OAEP-384\nRSA-OAEP-512\nRSA1_5\ndir",
 		},
 		{
 			name:         "get content encryption algorithms",
@@ -69,7 +69,7 @@ func TestExecute(t *testing.T) {
 			name:         "get signature algorithms",
 			args:         []string{"jose", "jwa", "--signature"},
 			wantExitCode: 0,
-			wantStdOut:   "ES256\nES256K\nES384\nES512\nEdDSA\nHS256\nHS384\nHS512\nPS256\nPS384\nPS512\nRS256\nRS384\nRS512\nnone",
+			wantStdOut:   "ES256\nES384\nES512\nEd25519\nEdDSA\nHS256\nHS384\nHS512\nPS256\nPS384\nPS512\nRS256\nRS384\nRS512\nnone",
 		},
 		{
 			name:         "set no options",

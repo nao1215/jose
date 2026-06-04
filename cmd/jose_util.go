@@ -1,13 +1,14 @@
 package cmd
 
 import (
+	"crypto/elliptic"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
-	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/lestrrat-go/jwx/v4/jwk"
 )
 
 const (
@@ -70,11 +71,11 @@ func openOutputFile(path string) (io.WriteCloser, error) {
 // availableCurves returns the elliptic curves usable for EC keys
 // (P-256/P-384/P-521).
 func availableCurves() []string {
-	curves := []string{}
-	for _, v := range jwk.AvailableCurves() {
-		curves = append(curves, v.Params().Name)
+	return []string{
+		elliptic.P256().Params().Name,
+		elliptic.P384().Params().Name,
+		elliptic.P521().Params().Name,
 	}
-	return curves
 }
 
 // availableOKPCurves returns the curves jose can actually generate for OKP
@@ -96,16 +97,22 @@ func contains(list []string, s string) bool {
 }
 
 func getKeyFile(keyFile, format string) (jwk.Set, error) {
-	var keyoptions []jwk.ReadFileOption
+	var keyoptions []jwk.ParseOption
 	switch format {
 	case "json":
 	case "pem":
-		keyoptions = append(keyoptions, jwk.WithPEM(true))
+		// v4 renamed WithPEM to WithX509 for PEM-framed X.509 input.
+		keyoptions = append(keyoptions, jwk.WithX509(true))
 	default:
 		return nil, wrap(ErrInvalidKeyFormat, "format is "+format)
 	}
 
-	keySet, err := jwk.ReadFile(keyFile, keyoptions...)
+	data, err := os.ReadFile(keyFile) //nolint:gosec // key path is supplied by the user on purpose
+	if err != nil {
+		return nil, wrap(ErrOpenFile, err.Error())
+	}
+
+	keySet, err := jwk.Parse(data, keyoptions...)
 	if err != nil {
 		return nil, wrap(ErrParseKey, err.Error())
 	}
