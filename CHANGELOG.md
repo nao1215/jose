@@ -7,6 +7,8 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-05
+
 ### Added
 
 - Pipe support: `jws sign`, `jws verify`, `jws parse`, and `jwe encrypt`/`decrypt`
@@ -99,6 +101,7 @@ defaults explicit, and adds a thorough test suite.
 Pre-review development releases (0.0.1 through 0.0.8). See the git history and
 the [release page](https://github.com/nao1215/jose/releases) for details.
 
-[Unreleased]: https://github.com/nao1215/jose/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/nao1215/jose/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/nao1215/jose/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/nao1215/jose/compare/v0.0.8...v0.1.0
 [0.0.8]: https://github.com/nao1215/jose/releases/tag/v0.0.8
