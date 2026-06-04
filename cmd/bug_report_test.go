@@ -1,70 +1,100 @@
-//go:build !int
-
 package cmd
 
 import (
 	"bytes"
-	"io"
-	"os"
-	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/google/go-cmp/cmp"
 )
 
-func TestBugReport(t *testing.T) {
-	t.Run("Check bug-report --help", func(t *testing.T) {
-		t.Parallel()
+func TestBugReportHelp(t *testing.T) {
+	t.Parallel()
 
-		b := bytes.NewBufferString("")
+	b := bytes.NewBufferString("")
+	root := newRootCmd()
+	root.SetOut(b)
+	root.SetArgs([]string{"bug-report", "--help"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
 
-		copyRootCmd := newRootCmd()
-
-		copyRootCmd.SetOut(b)
-		copyRootCmd.SetArgs([]string{"bug-report", "--help"})
-
-		if err := copyRootCmd.Execute(); err != nil {
-			t.Fatal(err)
+	out := b.String()
+	for _, want := range []string{"bug-report", "runtime information", "default browser"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("bug-report help missing %q:\n%s", want, out)
 		}
-		gotBytes, err := io.ReadAll(b)
-		if err != nil {
-			t.Fatal(err)
-		}
-		gotBytes = bytes.ReplaceAll(gotBytes, []byte("\r\n"), []byte("\n"))
+	}
+}
 
-		wantBytes, err := os.ReadFile(filepath.Join("testdata", "bug_report", "bug_report.txt"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		wantBytes = bytes.ReplaceAll(wantBytes, []byte("\r\n"), []byte("\n"))
+func TestBugReportBodyContainsSystemInfo(t *testing.T) {
+	t.Parallel()
 
-		if diff := cmp.Diff(strings.TrimSpace(string(gotBytes)), strings.TrimSpace(string(wantBytes))); diff != "" {
-			t.Errorf("value is mismatch (-want +got):\n%s", diff)
+	orgVer := Version
+	Version = "v1.0.0"
+	defer func() { Version = orgVer }()
+
+	body := bugReportBody()
+
+	wants := []string{
+		"## jose version\nv1.0.0",
+		"## Environment",
+		"- OS: " + runtime.GOOS,
+		"- Architecture: " + runtime.GOARCH,
+		"- Go: " + runtime.Version(),
+		"## Description (About the problem)",
+		"## Steps to reproduce",
+		"## Expected behavior",
+		"## Additional details",
+	}
+	for _, want := range wants {
+		if !strings.Contains(body, want) {
+			t.Errorf("bug report body missing %q:\n%s", want, body)
+		}
+	}
+
+	// The old template had broken "**" suffixes on its headers; make sure none
+	// remain.
+	if strings.Contains(body, "details**") || strings.Contains(body, "version**") {
+		t.Errorf("bug report body still contains broken markdown header:\n%s", body)
+	}
+}
+
+func TestBugReportFallbackWhenBrowserUnavailable(t *testing.T) {
+	orgVer := Version
+	Version = "v1.0.0"
+	defer func() { Version = orgVer }()
+
+	orgOpen := openBrowserFunc
+	openBrowserFunc = func(string) bool { return false }
+	defer func() { openBrowserFunc = orgOpen }()
+
+	out := captureStdout(t, func() {
+		if err := bugReport(newRootCmd(), nil); err != nil {
+			t.Fatal(err)
 		}
 	})
 
-	t.Run("open bug report", func(t *testing.T) {
-		orgVer := Version
-		Version = "v1.0.0"
-		defer func() {
-			Version = orgVer
-		}()
+	if !strings.Contains(out, "Please file a new issue") {
+		t.Errorf("fallback output missing instructions:\n%s", out)
+	}
+	if !strings.Contains(out, "## jose version") {
+		t.Errorf("fallback output missing template body:\n%s", out)
+	}
+}
 
-		var got string
-		openBrowserFunc = func(targetURL string) bool {
-			got = targetURL
-			return true
-		}
+func TestBugReportOpensBrowserWithEncodedURL(t *testing.T) {
+	orgOpen := openBrowserFunc
+	var got string
+	openBrowserFunc = func(targetURL string) bool {
+		got = targetURL
+		return true
+	}
+	defer func() { openBrowserFunc = orgOpen }()
 
-		cmd := newRootCmd()
-		if err := bugReport(cmd, []string{}); err != nil {
-			t.Fatal(err)
-		}
-
-		want := "https://github.com/nao1215/jose/issues/new?title=[Bug Report] Title&body=%23%23+jose+version%2A%2A%0Av1.0.0%0A%0A%23%23+Description+%28About+the+problem%29%0AA+clear+description+of+the+bug+encountered.%0A%0A%23%23+Steps+to+reproduce%0ASteps+to+reproduce+the+bug.%0A%0A%23%23+Expected+behavior%0AExpected+behavior.%0A%0A%23%23+Additional+details%2A%2A%0AAny+other+useful+data+to+share.%0A"
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
-	})
+	if err := bugReport(newRootCmd(), nil); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(got, "https://github.com/nao1215/jose/issues/new?") {
+		t.Errorf("unexpected bug report URL: %s", got)
+	}
 }

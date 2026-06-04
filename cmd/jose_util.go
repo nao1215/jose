@@ -58,7 +58,7 @@ func openOutputFile(path string) (io.WriteCloser, error) {
 	case "":
 		return nil, ErrRequireFileName
 	default:
-		f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
+		f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 		if err != nil {
 			return nil, fmt.Errorf(`%w: %s`, ErrCreateFile, err.Error())
 		}
@@ -67,12 +67,32 @@ func openOutputFile(path string) (io.WriteCloser, error) {
 	return output, nil
 }
 
+// availableCurves returns the elliptic curves usable for EC keys
+// (P-256/P-384/P-521).
 func availableCurves() []string {
 	curves := []string{}
 	for _, v := range jwk.AvailableCurves() {
 		curves = append(curves, v.Params().Name)
 	}
 	return curves
+}
+
+// availableOKPCurves returns the curves jose can actually generate for OKP
+// keys. The jwx library advertises Ed448/X448 as constants, but the Go
+// standard library has no generator for them, so jose only supports
+// Ed25519 and X25519.
+func availableOKPCurves() []string {
+	return []string{"Ed25519", "X25519"}
+}
+
+// contains reports whether s is present in list.
+func contains(list []string, s string) bool {
+	for _, v := range list {
+		if v == s {
+			return true
+		}
+	}
+	return false
 }
 
 func getKeyFile(keyFile, format string) (jwk.Set, error) {

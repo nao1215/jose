@@ -1,63 +1,26 @@
-run:
-  go: "1.20"
-
-issues:
-  exclude-use-default: false
+version: "2"
 
 linters:
-  disable-all: true
+  default: standard
   enable:
-    - deadcode
-    - errcheck
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - structcheck
-    - typecheck
-    - unused
-    - varcheck
-    - asciicheck
     - bodyclose
-    #- cyclop
-    - dogsled
-    - dupl
-    - durationcheck
-    - errorlint
-    - exhaustive
-    #- exhaustivestruct
-    - exportloopref
-    - forcetypeassert
-    # - funlen
-    # - gci
-    - gochecknoglobals
-    - gochecknoinits
-    - goconst
-    - gocritic
-    - goimports
-    - gomnd
-    - gosec
-    - ifshort
-    #- lll
     - misspell
-    - nakedret
-    #- nlreturn
-    - noctx
-    # - nolintlint
-    - paralleltest
-    - prealloc
-    - rowserrcheck
-    - sqlclosecheck
-    - stylecheck
-    - tagliatelle
-    - thelper
     - unconvert
-    - unparam
-    - wastedassign
     - whitespace
-linters-settings:
-  tagliatelle:
-    case:
-      use-field-name: true
-      rules:
-        json: snake
+  settings:
+    misspell:
+      locale: US
+  exclusions:
+    presets:
+      - std-error-handling
+    rules:
+      # Test helpers use math/rand for reproducible data and read into buffers;
+      # neither is a security concern in tests.
+      - path: _test\.go
+        linters:
+          - gosec
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

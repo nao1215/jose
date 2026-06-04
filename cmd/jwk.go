@@ -36,10 +36,10 @@ func newJWKGenerateCmd() *cobra.Command {
 		RunE:    runJWKGenerate,
 	}
 
-	cmd.Flags().StringP("curve", "c", "", "elliptic curve type for EC or OKP keys (Ed25519/Ed448/P-256/P-384/P-521/X25519/X448)")
+	cmd.Flags().StringP("curve", "c", "", "elliptic curve for EC (P-256/P-384/P-521) or OKP (Ed25519/X25519) keys")
 	cmd.Flags().StringP("type", "t", "", "jwk type (RSA/EC/OKP/oct)")
-	cmd.Flags().IntP("size", "s", defaultKeySize, "rsa key size or oct key size")
-	cmd.Flags().StringP("output-format", "O", "json", "rsa key output format (json/pem)")
+	cmd.Flags().IntP("size", "s", defaultKeySize, "key size in bits for RSA or oct keys (default 2048)")
+	cmd.Flags().StringP("output-format", "O", "json", "output format for RSA/EC keys (json/pem)")
 	cmd.Flags().StringP("output", "o", "-", "output to file")
 	cmd.Flags().BoolP("public-key", "p", false, "display public key")
 
@@ -47,9 +47,9 @@ func newJWKGenerateCmd() *cobra.Command {
 }
 
 type jwkGenerater struct {
-	Curve        string  `validate:"oneof=Ed25519 Ed448 P-256 P-384 P-521 X25519 X448"`
+	Curve        string  `validate:"-"`
 	KeyType      string  `validate:"required,oneof=RSA EC OKP oct"`
-	KeySize      int     `validate:"gte=256"`
+	KeySize      int     `validate:"-"`
 	OutputFormat string  `validate:"oneof=json pem"`
 	Output       string  `validate:"-"`
 	PublicKey    bool    `validate:"-"`
@@ -123,22 +123,42 @@ func (j *jwkGenerater) valid() error {
 		return err
 	}
 
-	return j.validECDSACurve()
+	return j.validCurve()
 }
 
+// validKeySize validates --size for the key types that use it. The size is
+// expressed in bits and only applies to RSA and oct keys; EC and OKP keys
+// ignore it because their length is fixed by the curve.
 func (j *jwkGenerater) validKeySize() error {
-	if j.KeySize%256 == 0 {
+	if j.KeyType != jwa.RSA.String() && j.KeyType != jwa.OctetSeq.String() {
 		return nil
 	}
-	return ErrKeySize
+	if j.KeySize < 256 || j.KeySize%8 != 0 {
+		return ErrKeySize
+	}
+	return nil
 }
 
-func (j *jwkGenerater) validECDSACurve() error {
-	if j.KeyType != jwa.EC.String() {
-		return nil
+// validCurve validates --curve against the curves jose can actually generate
+// for the requested key type. EC keys use P-256/P-384/P-521 and OKP keys use
+// Ed25519/X25519; other key types do not use a curve.
+func (j *jwkGenerater) validCurve() error {
+	switch j.KeyType {
+	case jwa.EC.String():
+		if j.Curve == "" {
+			return ErrRequireCurve
+		}
+		if !contains(availableCurves(), j.Curve) {
+			return wrap(ErrInvalidCurve, "EC supports "+strings.Join(availableCurves(), "/"))
+		}
+	case jwa.OKP.String():
+		if j.Curve == "" {
+			return ErrRequireCurve
+		}
+		if !contains(availableOKPCurves(), j.Curve) {
+			return wrap(ErrInvalidCurve, "OKP supports "+strings.Join(availableOKPCurves(), "/"))
+		}
 	}
-
-	availableCurves()
 	return nil
 }
 
@@ -154,7 +174,9 @@ func (j *jwkGenerater) generate() (err error) {
 			return err
 		}
 	case jwa.OctetSeq.String():
-		rawKey = j.generateOctetSeq()
+		if rawKey, err = j.generateOctetSeq(); err != nil {
+			return err
+		}
 	case jwa.OKP.String():
 		if rawKey, err = j.generateOKP(); err != nil {
 			return err
@@ -166,9 +188,13 @@ func (j *jwkGenerater) generate() (err error) {
 		return wrap(ErrGenerateJWKFromRawKey, err.Error())
 	}
 
-	j.KeySet.AddKey(key)
+	if err := j.KeySet.AddKey(key); err != nil {
+		return wrap(ErrGenerateJWKFromRawKey, err.Error())
+	}
 	if j.PublicKey {
-		j.setPublicKey()
+		if err := j.setPublicKey(); err != nil {
+			return err
+		}
 	}
 
 	output, err := openOutputFile(j.Output)
@@ -220,10 +246,12 @@ func (j *jwkGenerater) generateECDSA() (interface{}, error) {
 	return key, nil
 }
 
-func (j *jwkGenerater) generateOctetSeq() interface{} {
-	octets := make([]byte, j.KeySize)
-	rand.Reader.Read(octets)
-	return octets
+func (j *jwkGenerater) generateOctetSeq() (interface{}, error) {
+	octets := make([]byte, j.KeySize/8)
+	if _, err := rand.Read(octets); err != nil {
+		return nil, wrap(ErrGenerateOctetSeq, err.Error())
+	}
+	return octets, nil
 }
 
 func (j *jwkGenerater) generateOKP() (interface{}, error) {
@@ -246,6 +274,10 @@ func (j *jwkGenerater) generateOKP() (interface{}, error) {
 			return nil, wrap(ErrGenerateX25519, err.Error())
 		}
 		rawKey = priv
+	default:
+		// jwx accepts Ed448/X448 as constants, but Go has no generator for
+		// them, so anything other than Ed25519/X25519 is unsupported.
+		return nil, wrap(ErrInvalidCurve, "OKP supports "+strings.Join(availableOKPCurves(), "/"))
 	}
 	return rawKey, nil
 }

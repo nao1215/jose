@@ -1,4 +1,4 @@
-// Package main is verify-iap-receipt command entrypoint.
+// Package main is the jose command entrypoint.
 package main
 
 import (

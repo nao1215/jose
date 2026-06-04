@@ -138,7 +138,6 @@ func runJWA(cmd *cobra.Command, _ []string) error {
 		if e := cmd.Usage(); e != nil {
 			err = errors.Join(err, e)
 		}
-		fmt.Println()
 		return err
 	}
 
