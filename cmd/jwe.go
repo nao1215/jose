@@ -29,7 +29,7 @@ func newJWEEncryptCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "encrypt",
 		Aliases: []string{"enc"},
-		Short:   "Encrypt payload to generage JWE message",
+		Short:   "Encrypt a payload into a JWE message",
 		Long: `Encrypt contents of FILE and generate a JWE message using
 the specified algorithms and key. Use "-" as FILE to
 read from STDIN.		

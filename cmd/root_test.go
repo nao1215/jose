@@ -94,7 +94,6 @@ func TestExecute(t *testing.T) {
 }
 
 func TestExecuteEncryptAndDecrypt(t *testing.T) {
-
 	t.Run("encrypt and decrypt message", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		tmpFile := filepath.Join(tmpDir, "message.txt")

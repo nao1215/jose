@@ -1,58 +1,104 @@
 package cmd
 
 import (
+	"bytes"
+	"errors"
+	"os"
+	"strings"
 	"testing"
-
-	"github.com/nao1215/gorky/file"
 )
 
-func TestCompletion(t *testing.T) { //nolint
-	tmpDir := t.TempDir()
-	t.Setenv("HOME", tmpDir)
+func TestCompletionGeneratesScriptToStdout(t *testing.T) {
+	t.Parallel()
 
-	t.Run("generate completion file", func(t *testing.T) {
-		if isWindows() {
-			return
-		}
+	tests := []struct {
+		shell       string
+		wantInclude string
+	}{
+		{shell: "bash", wantInclude: "bash completion"},
+		{shell: "zsh", wantInclude: "#compdef"},
+		{shell: "fish", wantInclude: "fish"},
+	}
 
-		cmd := newCompletionCmd()
-		if err := completion(cmd, nil); err != nil {
-			t.Fatal(err)
-		}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.shell, func(t *testing.T) {
+			t.Parallel()
 
-		if !file.IsFile(fishCompletionFilePath()) {
-			t.Errorf("failed to create %s", fishCompletionFilePath())
-		}
+			root := newRootCmd()
+			var buf bytes.Buffer
+			root.SetOut(&buf)
+			root.SetArgs([]string{"completion", tt.shell})
+			if err := root.Execute(); err != nil {
+				t.Fatalf("completion %s: %v", tt.shell, err)
+			}
+			if !strings.Contains(strings.ToLower(buf.String()), strings.ToLower(tt.wantInclude)) {
+				t.Errorf("completion %s output missing %q:\n%s", tt.shell, tt.wantInclude, buf.String())
+			}
+		})
+	}
+}
 
-		if !file.IsFile(bashCompletionFilePath()) {
-			t.Errorf("failed to create %s", bashCompletionFilePath())
-		}
+func TestCompletionDoesNotTouchHomeFiles(t *testing.T) {
+	// The completion command must be non-destructive: it must not create files
+	// under HOME or edit .zshrc the way the old implementation did.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
 
-		if !file.IsFile(zshCompletionFilePath()) {
-			t.Errorf("failed to create %s", zshCompletionFilePath())
-		}
-	})
+	root := newRootCmd()
+	var buf bytes.Buffer
+	root.SetOut(&buf)
+	root.SetArgs([]string{"completion", "zsh"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
 
-	t.Run("update completion file", func(t *testing.T) {
-		if isWindows() {
-			return
+	entries, err := os.ReadDir(home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		var names []string
+		for _, e := range entries {
+			names = append(names, e.Name())
 		}
+		t.Errorf("completion wrote to HOME: %v", names)
+	}
+}
 
-		cmd := newRootCmd()
-		if err := completion(cmd, nil); err != nil {
-			t.Fatal(err)
-		}
+func TestCompletionRejectsUnknownShell(t *testing.T) {
+	t.Parallel()
 
-		if !file.IsFile(fishCompletionFilePath()) {
-			t.Errorf("failed to create %s", fishCompletionFilePath())
-		}
+	root := newRootCmd()
+	root.SetArgs([]string{"completion", "powershell"})
+	root.SetOut(new(bytes.Buffer))
+	root.SetErr(new(bytes.Buffer))
+	if err := root.Execute(); err == nil {
+		t.Error("expected error for unknown shell, got nil")
+	}
+}
 
-		if !file.IsFile(bashCompletionFilePath()) {
-			t.Errorf("failed to create %s", bashCompletionFilePath())
-		}
+func TestCompletionRequiresShellArgument(t *testing.T) {
+	t.Parallel()
 
-		if !file.IsFile(zshCompletionFilePath()) {
-			t.Errorf("failed to create %s", zshCompletionFilePath())
-		}
-	})
+	root := newRootCmd()
+	root.SetArgs([]string{"completion"})
+	root.SetOut(new(bytes.Buffer))
+	root.SetErr(new(bytes.Buffer))
+	if err := root.Execute(); err == nil {
+		t.Error("expected error when no shell argument given, got nil")
+	}
+}
+
+func TestRunCompletionUnsupportedShell(t *testing.T) {
+	t.Parallel()
+
+	// Directly drive runCompletion with a shell that passed arg validation in
+	// theory, to cover the defensive default branch.
+	cmd := newCompletionCmd()
+	cmd.SetOut(new(bytes.Buffer))
+	err := runCompletion(cmd, []string{"powershell"})
+	if !errors.Is(err, ErrUnsupportedShell) {
+		t.Errorf("want ErrUnsupportedShell, got %v", err)
+	}
 }

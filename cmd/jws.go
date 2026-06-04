@@ -31,7 +31,7 @@ func newJWSCmd() *cobra.Command {
 func newJWSParseCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "parse",
-		Short: "Parse JWS mesage",
+		Short: "Parse a JWS message and print its payload",
 		Long: `Parse JWS and display payload in the JWS message.
 Use "-" as FILE to read from STDIN.`,
 		RunE: runJWSParse,
@@ -129,7 +129,7 @@ Currently, only single key signature mode is supported.
 		RunE: runJWSSign,
 	}
 
-	cmd.Flags().StringP("algorithm", "a", "none", "algorithm to use in single key mode")
+	cmd.Flags().StringP("algorithm", "a", "", "signature algorithm (required, e.g. ES256, RS256, HS256, EdDSA)")
 	cmd.Flags().StringP("key", "k", "", "file name that contains the key to use. single JWK or JWK set")
 	cmd.Flags().StringP("key-format", "F", "json", "format of the store key (json/pem)")
 	cmd.Flags().StringP("header", "H", "", "header object to inject into JWS message protected header")
@@ -139,7 +139,7 @@ Currently, only single key signature mode is supported.
 }
 
 type jwsSigner struct {
-	Algorithm     string `validate:"required,oneof=ES256 ES256K ES384 ES512 EdDSA HS256 HS384 HS512 PS256 PS384 PS512 RS256 RS384 RS512 none"`
+	Algorithm     string `validate:"required,oneof=ES256 ES256K ES384 ES512 EdDSA HS256 HS384 HS512 PS256 PS384 PS512 RS256 RS384 RS512"`
 	Key           string `validate:"required"`
 	KeyFormat     string `validate:"oneof=json pem"`
 	Header        string `validate:"-"`
@@ -328,7 +328,7 @@ either "alg" or "kid"
 		RunE: runJWSVerify,
 	}
 
-	cmd.Flags().StringP("algorithm", "a", "none", "algorithm to use in single key mode")
+	cmd.Flags().StringP("algorithm", "a", "", "signature algorithm (required, e.g. ES256, RS256, HS256, EdDSA)")
 	cmd.Flags().StringP("key", "k", "", "file name that contains the key to use. single JWK or JWK set")
 	cmd.Flags().StringP("key-format", "F", "json", "format of the store key (json/pem)")
 	cmd.Flags().BoolP("match-kid", "m", false, "instead of using alg, attempt to verify only if the key ID (kid) matches")
@@ -338,7 +338,7 @@ either "alg" or "kid"
 }
 
 type jwsVerifier struct {
-	Algorithm     string `validate:"required,oneof=ES256 ES256K ES384 ES512 EdDSA HS256 HS384 HS512 PS256 PS384 PS512 RS256 RS384 RS512 none"`
+	Algorithm     string `validate:"required_without=MatchKeyID,omitempty,oneof=ES256 ES256K ES384 ES512 EdDSA HS256 HS384 HS512 PS256 PS384 PS512 RS256 RS384 RS512"`
 	Key           string `validate:"required"`
 	KeyFormat     string `validate:"oneof=json pem"`
 	MatchKeyID    bool   `validate:"-"`
@@ -481,12 +481,18 @@ func (j *jwsVerifier) writeVerifyResult(w io.Writer, jwsMessage []byte, keyset j
 		return wrap(ErrInvalidAlgorithm, err.Error())
 	}
 
+	// Try every key in the set. A JWK set may legitimately hold several keys
+	// where only one matches the signature, so a failure on one key must not
+	// abort verification: keep going until a key verifies, and only report an
+	// error when none of them do.
 	ctx := context.Background()
+	var lastErr error
 	for iter := keyset.Keys(ctx); iter.Next(ctx); {
 		pair := iter.Pair()
 		key, ok := pair.Value.(jwk.Key)
 		if !ok {
-			return wrap(ErrVerifyJWSMessage, "type assertion")
+			lastErr = wrap(ErrVerifyJWSMessage, "type assertion")
+			continue
 		}
 
 		// Verify with the public key. PublicKeyOf returns the key as-is for
@@ -494,14 +500,21 @@ func (j *jwsVerifier) writeVerifyResult(w io.Writer, jwsMessage []byte, keyset j
 		// self-signed message created from a private JWK verifies correctly.
 		pubkey, err := jwk.PublicKeyOf(key)
 		if err != nil {
-			return wrap(ErrVerifyJWSMessage, err.Error())
+			lastErr = wrap(ErrVerifyJWSMessage, err.Error())
+			continue
 		}
 
 		payload, err := jws.Verify(jwsMessage, jws.WithKey(alg, pubkey))
 		if err != nil {
-			return wrap(ErrVerifyJWSMessage, err.Error())
+			lastErr = wrap(ErrVerifyJWSMessage, err.Error())
+			continue
 		}
 		fmt.Fprintf(w, "%s", payload)
+		return nil
 	}
-	return nil
+
+	if lastErr == nil {
+		lastErr = wrap(ErrVerifyJWSMessage, "key set contains no keys")
+	}
+	return lastErr
 }

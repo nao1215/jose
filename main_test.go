@@ -1,4 +1,4 @@
-// Package main is verify-iap-receipt command entrypoint.
+// Package main is the jose command entrypoint.
 package main
 
 import (
@@ -7,8 +7,6 @@ import (
 )
 
 func Test_main(t *testing.T) {
-	t.Parallel()
-
 	t.Run("Execute version subcommand", func(t *testing.T) {
 		exitCode := -1
 		oldOsExit := osExit
@@ -20,7 +18,7 @@ func Test_main(t *testing.T) {
 		}()
 
 		os.Args = []string{
-			"verify-iap-receipt",
+			"jose",
 			"version",
 		}
 		main() // Run test
@@ -41,13 +39,13 @@ func Test_main(t *testing.T) {
 		}()
 
 		os.Args = []string{
-			"verify-iap-receipt",
+			"jose",
 			"non-existent",
 		}
 		main() // Run test
 
 		if exitCode != 1 {
-			t.Errorf("mismatch exit code: want=0, got=%d", exitCode)
+			t.Errorf("mismatch exit code: want=1, got=%d", exitCode)
 		}
 	})
 }
