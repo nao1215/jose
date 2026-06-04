@@ -456,7 +456,15 @@ func (j *jwsVerifier) verify() error {
 
 func (j *jwsVerifier) writeVerifyResult(w io.Writer, jwsMessage []byte, keyset jwk.Set) error {
 	if j.MatchKeyID {
-		payload, err := jws.Verify(jwsMessage, jws.WithKeySet(keyset))
+		// A JWS message signed with a private key must be verified with the
+		// corresponding public key. When the user supplies a private JWK (the
+		// self-signed case), derive the public keys so verification succeeds.
+		pubset, err := jwk.PublicSetOf(keyset)
+		if err != nil {
+			return wrap(ErrVerifyJWSMessage, err.Error())
+		}
+
+		payload, err := jws.Verify(jwsMessage, jws.WithKeySet(pubset))
 		if err != nil {
 			return wrap(ErrVerifyJWSMessage, err.Error())
 		}
@@ -481,7 +489,15 @@ func (j *jwsVerifier) writeVerifyResult(w io.Writer, jwsMessage []byte, keyset j
 			return wrap(ErrVerifyJWSMessage, "type assertion")
 		}
 
-		payload, err := jws.Verify(jwsMessage, jws.WithKey(alg, key))
+		// Verify with the public key. PublicKeyOf returns the key as-is for
+		// symmetric keys and the public counterpart for private keys, so a
+		// self-signed message created from a private JWK verifies correctly.
+		pubkey, err := jwk.PublicKeyOf(key)
+		if err != nil {
+			return wrap(ErrVerifyJWSMessage, err.Error())
+		}
+
+		payload, err := jws.Verify(jwsMessage, jws.WithKey(alg, pubkey))
 		if err != nil {
 			return wrap(ErrVerifyJWSMessage, err.Error())
 		}
