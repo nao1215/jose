@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/lestrrat-go/jwx/v4/jwk"
 )
 
 func TestNewJwkGenerater(t *testing.T) {
@@ -150,8 +150,8 @@ func TestJWKGenerateOctetSize(t *testing.T) {
 	set := readKeySet(t, path, "json")
 	key, _ := set.Key(0)
 
-	var raw []byte
-	if err := key.Raw(&raw); err != nil {
+	raw, err := jwk.Export[[]byte](key)
+	if err != nil {
 		t.Fatal(err)
 	}
 	if len(raw) != 32 {

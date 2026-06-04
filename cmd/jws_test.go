@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/lestrrat-go/jwx/v4/jwk"
 )
 
 // issueRSAPrivateJWK is the RSA private key reported in issue #54.

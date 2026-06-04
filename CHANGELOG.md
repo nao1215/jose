@@ -7,6 +7,22 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ## [Unreleased]
 
+### Changed
+
+- Migrated from jwx v2 (and the stray jwx v1 import in `jwa`) to jwx v4. The
+  module now requires Go 1.26. Because jwx v4 uses `encoding/json/v2`, building
+  jose from source requires `GOEXPERIMENT=jsonv2` until that package leaves the
+  experiment; the `make` targets, CI, and GoReleaser set it, and the README and
+  CONTRIBUTING note it for `go install`.
+- Internal adjustments for the v4 API: `jwa` algorithm constants are now
+  functions, `jwk.FromRaw`/`Raw` became `jwk.Import`/`jwk.Export`, PEM output
+  goes through `jwkbb.EncodePEM`, key files are read with `jwk.Parse` and
+  `jwk.WithX509`, JWK sets are iterated with `Set.All()`, and X25519 keys are
+  generated with the standard library's `crypto/ecdh` (jwx dropped its `x25519`
+  package). `jws sign`/`verify` dropped ES256K from the accepted algorithms,
+  since it now lives in a separate jwx extension module. Behavior and CLI flags
+  are unchanged.
+
 ## [0.1.0] - 2026-06-05
 
 This is the first release after a project-wide review. It fixes the commands

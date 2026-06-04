@@ -19,11 +19,16 @@ writing a program. It is built on [github.com/lestrrat-go/jwx](https://github.co
 
 ## Install
 
-Use `go install`:
+Use `go install` (Go 1.26 or later):
 
 ```shell
-go install github.com/nao1215/jose@latest
+GOEXPERIMENT=jsonv2 go install github.com/nao1215/jose@latest
 ```
+
+jose depends on jwx v4, which uses `encoding/json/v2`. On Go 1.26 that package
+is still gated behind `GOEXPERIMENT=jsonv2`, so the experiment must be set when
+building from source. The prebuilt binaries and packages below need no such
+flag.
 
 Use Homebrew:
 

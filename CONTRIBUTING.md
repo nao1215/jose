@@ -6,9 +6,14 @@ repository all help.
 
 ## Development Environment
 
-- Go 1.24 or later (the version is pinned in `go.mod`)
+- Go 1.26 or later (the version is pinned in `go.mod`)
 - `make`
 - `git`
+
+jose depends on jwx v4, which uses `encoding/json/v2`. On Go 1.26 that package
+is gated behind `GOEXPERIMENT=jsonv2`, so the experiment must be set for every
+build and test. The `make` targets export it for you; when running `go`
+directly, prefix the command, for example `GOEXPERIMENT=jsonv2 go test ./...`.
 
 Optional tools used by the linter, coverage, end-to-end tests, and the demo are
 installed with:

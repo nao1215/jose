@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/lestrrat-go/jwx/jwa"
+	"github.com/lestrrat-go/jwx/v4/jwa"
 	"github.com/spf13/cobra"
 )
 

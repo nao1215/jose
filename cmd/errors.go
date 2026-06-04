@@ -16,7 +16,7 @@ var (
 	ErrRequireKeyFile           = errors.New("key file required (you must specify --key option)")
 	ErrKeyType                  = errors.New("key type is one of 'RSA', 'EC', 'OKP', 'oct'")
 	ErrKeySize                  = errors.New("key size must be in bits, a multiple of 8 and at least 256 (default = 2048)")
-	ErrInvalidAlgorithm         = errors.New("signature algorithm is one of 'ES256' 'ES256K' 'ES384' 'ES512' 'EdDSA' 'HS256' 'HS384' 'HS512' 'PS256' 'PS384' 'PS512' 'RS256' 'RS384' 'RS512'")
+	ErrInvalidAlgorithm         = errors.New("signature algorithm is one of 'ES256' 'ES384' 'ES512' 'EdDSA' 'HS256' 'HS384' 'HS512' 'PS256' 'PS384' 'PS512' 'RS256' 'RS384' 'RS512'")
 	ErrUnsupportedShell         = errors.New("unsupported shell (supported: bash, zsh, fish)")
 	ErrInvalidKeyFormat         = errors.New("invalid output format (only support json or pem)")
 	ErrInvalidKeyEncryption     = errors.New("invalid key encryption; the supported key encryption can be checked with '$jose jwa -K'")

@@ -1,5 +1,9 @@
 .PHONY: build test test-e2e test-fuzz lint clean demo tools help
 
+# jwx v4 uses encoding/json/v2, which is still gated behind GOEXPERIMENT=jsonv2
+# on Go 1.26. Export it for every go invocation in this Makefile.
+export GOEXPERIMENT := jsonv2
+
 APP         = jose
 VERSION     = $(shell git describe --tags --abbrev=0 2>/dev/null || echo dev)
 GO          = go

@@ -7,6 +7,10 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  # jwx v4 uses encoding/json/v2, gated behind this experiment on Go 1.26.
+  GOEXPERIMENT: jsonv2
+
 jobs:
   fuzz:
     name: Short fuzz smoke test

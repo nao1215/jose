@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/lestrrat-go/jwx/v2/jwa"
-	"github.com/lestrrat-go/jwx/v2/jwk"
-	"github.com/lestrrat-go/jwx/v2/jws"
+	"github.com/lestrrat-go/jwx/v4/jwa"
+	"github.com/lestrrat-go/jwx/v4/jwk"
+	"github.com/lestrrat-go/jwx/v4/jws"
 )
 
 // These fuzz tests feed arbitrary external input into the code paths that parse
@@ -87,13 +87,13 @@ func FuzzSignOptionsHeader(f *testing.F) {
 	f.Add(``)
 
 	raw := make([]byte, 32)
-	key, err := jwk.FromRaw(raw)
+	key, err := jwk.Import[jwk.Key](raw)
 	if err != nil {
 		f.Fatal(err)
 	}
 
 	f.Fuzz(func(_ *testing.T, header string) {
 		s := &jwsSigner{Header: header}
-		_, _ = s.signOptions(jwa.HS256, key)
+		_, _ = s.signOptions(jwa.HS256(), key)
 	})
 }
