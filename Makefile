@@ -1,4 +1,4 @@
-.PHONY: build test test-e2e test-fuzz lint clean demo tools help
+.PHONY: build test test-e2e test-fuzz lint clean demo demo-pipe tools help
 
 # jwx v4 uses encoding/json/v2, which is still gated behind GOEXPERIMENT=jsonv2
 # on Go 1.26. Export it for every go invocation in this Makefile.
@@ -50,6 +50,17 @@ demo: build ## Regenerate the README gif from doc/img/demo.tape (needs vhs)
 	vhs doc/img/demo.tape && mv demo.gif doc/img/demo.gif
 	rm -rf $(DEMO_DIR) $(DEMO_BIN)
 	@echo 'Wrote doc/img/demo.gif'
+
+DEMO_PIPE_DIR = /tmp/$(APP)-pipe-demo
+
+demo-pipe: build ## Regenerate the pipe gif from doc/img/pipe.tape (needs vhs)
+	@command -v vhs >/dev/null || { echo 'vhs is required: go install github.com/charmbracelet/vhs@latest'; exit 1; }
+	cp $(APP) $(DEMO_BIN)
+	rm -rf $(DEMO_PIPE_DIR) && mkdir -p $(DEMO_PIPE_DIR)
+	printf '{"sub":"alice"}' > $(DEMO_PIPE_DIR)/payload.json
+	vhs doc/img/pipe.tape && mv pipe.gif doc/img/pipe.gif
+	rm -rf $(DEMO_PIPE_DIR) $(DEMO_BIN)
+	@echo 'Wrote doc/img/pipe.gif'
 
 tools: ## Install developer tools (linter, coverage, shellspec for e2e)
 	$(GO_INSTALL) github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest

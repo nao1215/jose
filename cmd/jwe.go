@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/lestrrat-go/jwx/v4/jwa"
@@ -133,19 +132,9 @@ func runJWEEncrypt(cmd *cobra.Command, args []string) error {
 }
 
 func (j *jweEncrypter) encrypt() error {
-	src, err := openInputFile(j.InputFilePath)
+	buf, err := readInput(j.InputFilePath)
 	if err != nil {
 		return err
-	}
-	defer func() {
-		if e := src.Close(); e != nil {
-			err = errors.Join(err, e)
-		}
-	}()
-
-	buf, err := io.ReadAll(src)
-	if err != nil {
-		return wrap(ErrReadFile, err.Error())
 	}
 
 	keyenc, ok := jwa.LookupKeyEncryptionAlgorithm(j.KeyEncryption)
@@ -288,19 +277,9 @@ func runJWEDecrypt(cmd *cobra.Command, args []string) error {
 }
 
 func (j *jweDecrypter) decrypt() error {
-	src, err := openInputFile(j.InputFilePath)
+	buf, err := readInput(j.InputFilePath)
 	if err != nil {
 		return err
-	}
-	defer func() {
-		if e := src.Close(); e != nil {
-			err = errors.Join(err, e)
-		}
-	}()
-
-	buf, err := io.ReadAll(src)
-	if err != nil {
-		return wrap(ErrReadFile, err.Error())
 	}
 
 	keyset, err := getKeyFile(j.Key, j.KeyFormat)

@@ -98,34 +98,40 @@ func (j *jsonWebAlhorithm) writeJWA(w io.Writer) {
 	}
 }
 
-func (j *jsonWebAlhorithm) writeKeyTypes(w io.Writer) {
-	for _, alg := range jwa.KeyTypes() {
-		fmt.Fprintf(w, "%s\n", alg)
+// stringifyAlgorithms converts a slice of jwx algorithm values into their
+// string names so they can be intersected with jose's supported lists.
+func stringifyAlgorithms[T fmt.Stringer](algs []T) []string {
+	names := make([]string, 0, len(algs))
+	for _, a := range algs {
+		names = append(names, a.String())
 	}
+	return names
+}
+
+func writeLines(w io.Writer, lines []string) {
+	for _, line := range lines {
+		fmt.Fprintf(w, "%s\n", line)
+	}
+}
+
+func (j *jsonWebAlhorithm) writeKeyTypes(w io.Writer) {
+	writeLines(w, filterSupported(stringifyAlgorithms(jwa.KeyTypes()), supportedKeyTypes()))
 }
 
 func (j *jsonWebAlhorithm) writeEllipticCurveAlgorithms(w io.Writer) {
-	for _, alg := range jwa.EllipticCurveAlgorithms() {
-		fmt.Fprintf(w, "%s\n", alg)
-	}
+	writeLines(w, filterSupported(stringifyAlgorithms(jwa.EllipticCurveAlgorithms()), supportedEllipticCurves()))
 }
 
 func (j *jsonWebAlhorithm) writeKeyEncryptionAlgorithms(w io.Writer) {
-	for _, alg := range jwa.KeyEncryptionAlgorithms() {
-		fmt.Fprintf(w, "%s\n", alg)
-	}
+	writeLines(w, filterSupported(stringifyAlgorithms(jwa.KeyEncryptionAlgorithms()), supportedKeyEncryptionAlgorithms()))
 }
 
 func (j *jsonWebAlhorithm) writeContentEncryptionAlgorithms(w io.Writer) {
-	for _, alg := range jwa.ContentEncryptionAlgorithms() {
-		fmt.Fprintf(w, "%s\n", alg)
-	}
+	writeLines(w, filterSupported(stringifyAlgorithms(jwa.ContentEncryptionAlgorithms()), supportedContentEncryptionAlgorithms()))
 }
 
 func (j *jsonWebAlhorithm) writeSignatureAlgorithms(w io.Writer) {
-	for _, alg := range jwa.SignatureAlgorithms() {
-		fmt.Fprintf(w, "%s\n", alg)
-	}
+	writeLines(w, filterSupported(stringifyAlgorithms(jwa.SignatureAlgorithms()), supportedSignatureAlgorithms()))
 }
 
 func runJWA(cmd *cobra.Command, _ []string) error {

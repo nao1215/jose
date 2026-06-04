@@ -123,7 +123,46 @@ func (j *jwkGenerater) valid() error {
 		return err
 	}
 
+	if err := j.validOct(); err != nil {
+		return err
+	}
+
+	if err := j.validPemSupport(); err != nil {
+		return err
+	}
+
 	return j.validCurve()
+}
+
+// validOct rejects oct-key options that jose cannot honor before the key is
+// generated, so the user gets a clear message instead of an internal library
+// error. An oct key is a raw symmetric secret: it has no public half, so
+// --public-key does not apply.
+func (j *jwkGenerater) validOct() error {
+	if j.KeyType != jwa.OctetSeq().String() {
+		return nil
+	}
+	if j.PublicKey {
+		return ErrPublicKeyForOct
+	}
+	return nil
+}
+
+// validPemSupport rejects PEM output for key types jose cannot frame as X.509,
+// so the user gets a clear message instead of an internal encoder error. oct
+// keys have no X.509 form, and OKP X25519 maps to Go's crypto/ecdh type, which
+// the PEM encoder does not handle.
+func (j *jwkGenerater) validPemSupport() error {
+	if j.OutputFormat != "pem" {
+		return nil
+	}
+	switch {
+	case j.KeyType == jwa.OctetSeq().String():
+		return ErrPemForOct
+	case j.KeyType == jwa.OKP().String() && j.Curve == "X25519":
+		return ErrPemForX25519
+	}
+	return nil
 }
 
 // validKeySize validates --size for the key types that use it. The size is

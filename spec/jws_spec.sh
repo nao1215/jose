@@ -29,6 +29,15 @@ Describe 'jose jws'
       # Compact JWS has two dots.
       The output should include '.'
     End
+
+    It 'signs a payload read from stdin via a pipe'
+      sign_pipe() {
+        cat "$WORK/payload.json" | jose jws sign --algorithm ES256 --key ec.jwk
+      }
+      When call sign_pipe
+      The status should be success
+      The output should include '.'
+    End
   End
 
   Describe 'verify'
@@ -36,6 +45,28 @@ Describe 'jose jws'
       When run jose jws verify --algorithm ES256 --key ec.jwk token.jws
       The status should be success
       The output should equal '{"sub":"alice"}'
+    End
+
+    It 'verifies a token passed directly as an argument'
+      token="$(cat "$WORK/token.jws")"
+      When run jose jws verify --algorithm ES256 --key ec.jwk "$token"
+      The status should be success
+      The output should equal '{"sub":"alice"}'
+    End
+
+    It 'verifies a token read from stdin via a pipe'
+      verify_pipe() {
+        cat "$WORK/token.jws" | jose jws verify --algorithm ES256 --key ec.jwk
+      }
+      When call verify_pipe
+      The status should be success
+      The output should equal '{"sub":"alice"}'
+    End
+
+    It 'reports a missing file instead of a parse error'
+      When run jose jws verify --algorithm ES256 --key ec.jwk does-not-exist.jws
+      The status should be failure
+      The stderr should include 'failed to open file'
     End
 
     It 'fails with the wrong key'
@@ -73,6 +104,12 @@ Describe 'jose jws'
       The status should be success
       The output should include 'Payload:'
       The output should include 'Signature 0:'
+    End
+
+    It 'reports a missing file instead of a parse error'
+      When run jose jws parse does-not-exist.jws
+      The status should be failure
+      The stderr should include 'failed to open file'
     End
   End
 End

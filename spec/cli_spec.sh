@@ -54,6 +54,36 @@ Describe 'jose CLI surface'
       The output should include 'oct'
     End
 
+    It 'lists only key types jose can generate'
+      When run jose jwa --key-type
+      The status should be success
+      # AKP is advertised by the library but jose cannot generate it.
+      The output should not include 'AKP'
+    End
+
+    It 'lists only signature algorithms jose accepts'
+      When run jose jwa --signature
+      The status should be success
+      The output should include 'EdDSA'
+      The output should not include 'Ed25519'
+      The output should not include 'none'
+    End
+
+    It 'lists only elliptic curves jose can generate'
+      When run jose jwa --elliptic-curve
+      The status should be success
+      The output should include 'X25519'
+      The output should not include 'X448'
+    End
+
+    It 'lists only key encryption algorithms jose accepts'
+      When run jose jwa --key-encryption
+      The status should be success
+      The output should include 'RSA-OAEP'
+      The output should not include 'RSA-OAEP-384'
+      The output should not include 'HPKE'
+    End
+
     It 'fails when no option is given'
       When run jose jwa
       The status should be failure

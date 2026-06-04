@@ -53,9 +53,30 @@ $ jose jws verify --algorithm ES256 --key ec.jwk token.jws
 {"sub":"alice"}
 ```
 
-Every command reads its input from a file or, when you pass `-`, from standard
-input. The `jws parse`, `jws sign`, and `jws verify` commands also accept a JWS
-token directly as an argument.
+## Input: files, stdin, pipes, and inline tokens
+
+Every command that takes input accepts it in three ways. You can pass a file
+path. You can pass `-` to read standard input. You can also pipe data in
+without any argument, so the command reads standard input when it is not a
+terminal:
+
+```shell
+$ echo '{"sub":"alice"}' | jose jws sign --algorithm ES256 --key ec.jwk
+$ cat token.jws | jose jws verify --algorithm ES256 --key ec.jwk
+```
+
+In addition, `jws parse` and `jws verify` accept a compact JWS token directly as
+the argument:
+
+```shell
+$ jose jws verify --algorithm ES256 --key ec.jwk "$(cat token.jws)"
+```
+
+jose decides this by shape. A value with the three dot-separated segments of a
+compact JWS is treated as a token; anything else is treated as a file path, so a
+mistyped file name reports "failed to open file" rather than a parse error.
+
+![pipe](./doc/img/pipe.gif)
 
 ## Generate keys: jose jwk generate
 
@@ -78,10 +99,13 @@ Flags:
 - `--size` (`-s`): key size in bits. Used by RSA (for example 2048 or 4096) and
   oct (for example 256, which produces a 32 byte secret). It must be a multiple
   of 8 and at least 256. EC and OKP ignore it. The default is 2048.
-- `--output-format` (`-O`): json (default) or pem. PEM is available for RSA and
-  EC keys; oct keys are JSON only.
+- `--output-format` (`-O`): json (default) or pem. PEM is available for RSA, EC,
+  and OKP Ed25519 keys. oct keys (a raw symmetric secret) and OKP X25519 keys
+  have no usable X.509 PEM encoding here, so they are JSON only and asking for
+  PEM is rejected.
 - `--output` (`-o`): output file, or `-` for standard output (default).
-- `--public-key` (`-p`): emit the public key instead of the private key.
+- `--public-key` (`-p`): emit the public key instead of the private key. oct
+  keys are symmetric and have no public half, so this is rejected for oct.
 
 ## Sign and verify: jose jws
 
@@ -146,8 +170,8 @@ Flags for `encrypt`:
 
 ## List algorithms: jose jwa
 
-`jose jwa` prints the algorithm names the underlying library understands, so you
-can copy a valid value into the flags above.
+`jose jwa` prints the algorithm names jose accepts, so you can copy a value
+straight into the flags above and have it work.
 
 ```shell
 $ jose jwa --key-type            # RSA, EC, OKP, oct
@@ -157,8 +181,9 @@ $ jose jwa --key-encryption      # JWE key encryption algorithms
 $ jose jwa --content-encryption  # JWE content encryption algorithms
 ```
 
-Note that this list is what jwx knows about. jose can generate keys only for the
-curves listed under `jose jwk generate` above.
+The underlying jwx library advertises some names jose does not support, such as
+the X448 curve, the none signature, and the RSA-OAEP-384 key encryption. Those
+are filtered out, so every value printed here is one jose can actually use.
 
 ## Helper commands
 

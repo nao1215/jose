@@ -11,7 +11,6 @@ import (
 	"github.com/lestrrat-go/jwx/v4/jwa"
 	"github.com/lestrrat-go/jwx/v4/jwk"
 	"github.com/lestrrat-go/jwx/v4/jws"
-	"github.com/nao1215/gorky/file"
 	"github.com/spf13/cobra"
 )
 
@@ -45,33 +44,24 @@ type jwsParser struct {
 }
 
 func newJWSParser(cmd *cobra.Command, args []string) (*jwsParser, error) {
-	if len(args) == 0 {
-		return nil, errors.New("you must specify file or jws token")
-	}
-	inputFilePath := args[0]
-
 	all, err := cmd.Flags().GetBool("all")
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "can not parse command line argument (payload", err)
 	}
 
-	var jws []byte
-	if !file.IsFile(inputFilePath) && inputFilePath != "-" {
-		jws = []byte(inputFilePath)
-	} else {
-		src, err := openInputFile(inputFilePath)
-		if err != nil {
-			return nil, err
-		}
-		defer func() {
-			if e := src.Close(); e != nil {
-				err = errors.Join(err, e)
-			}
-		}()
-		jws, err = io.ReadAll(src)
-		if err != nil {
-			return nil, wrap(ErrReadFile, err.Error())
-		}
+	// The argument is optional: a file, "-", or an inline token. When it is
+	// missing jose reads piped stdin; without a pipe it asks for input.
+	arg := ""
+	if len(args) != 0 {
+		arg = args[0]
+	}
+	if arg == "" && !stdinIsPipe() {
+		return nil, errors.New("you must specify file or jws token")
+	}
+
+	jws, err := readCompactJWS(arg)
+	if err != nil {
+		return nil, err
 	}
 
 	return &jwsParser{
@@ -222,19 +212,9 @@ func runJWSSign(cmd *cobra.Command, args []string) error {
 }
 
 func (j *jwsSigner) signer() error {
-	src, err := openInputFile(j.InputFilePath)
+	buf, err := readInput(j.InputFilePath)
 	if err != nil {
 		return err
-	}
-	defer func() {
-		if e := src.Close(); e != nil {
-			err = errors.Join(err, e)
-		}
-	}()
-
-	buf, err := io.ReadAll(src)
-	if err != nil {
-		return wrap(ErrReadFile, err.Error())
 	}
 
 	keyset, err := getKeyFile(j.Key, j.KeyFormat)
@@ -418,19 +398,9 @@ func runJWSVerify(cmd *cobra.Command, args []string) error {
 }
 
 func (j *jwsVerifier) verify() error {
-	src, err := openInputFile(j.InputFilePath)
+	buf, err := readCompactJWS(j.InputFilePath)
 	if err != nil {
 		return err
-	}
-	defer func() {
-		if e := src.Close(); e != nil {
-			err = errors.Join(err, e)
-		}
-	}()
-
-	buf, err := io.ReadAll(src)
-	if err != nil {
-		return wrap(ErrReadFile, err.Error())
 	}
 
 	keyset, err := getKeyFile(j.Key, j.KeyFormat)

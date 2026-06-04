@@ -63,6 +63,21 @@ Describe 'jose jwk generate'
     End
   End
 
+  Describe 'oct option combinations'
+    It 'rejects PEM output for oct keys'
+      When run jose jwk generate --type oct --size 256 --output-format pem
+      The status should be failure
+      The stderr should include 'oct'
+      The stderr should include 'json'
+    End
+
+    It 'rejects --public-key for oct keys'
+      When run jose jwk generate --type oct --size 256 --public-key
+      The status should be failure
+      The stderr should include 'public key'
+    End
+  End
+
   Describe 'overwrite regression'
     # Writing a short EC key over a long RSA key must leave a single parseable
     # key, not RSA bytes trailing the EC JSON. Signing with the file proves it
