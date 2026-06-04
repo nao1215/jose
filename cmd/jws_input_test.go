@@ -3,6 +3,8 @@ package cmd
 import (
 	"bytes"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -16,21 +18,27 @@ func TestJWSVerifyAcceptsInlineToken(t *testing.T) {
 	payloadPath := writeFile(t, "payload.txt", "inline token")
 	token := signWith(t, keyPath, "ES256", payloadPath, "")
 
+	// Write the recovered payload to a file rather than stdout: capturing the
+	// global os.Stdout races with other tests that print (for example the man
+	// page generator) and makes this assertion flaky.
+	outPath := filepath.Join(t.TempDir(), "out.txt")
 	v := &jwsVerifier{
 		Algorithm:     "ES256",
 		Key:           keyPath,
 		KeyFormat:     "json",
 		InputFilePath: token, // the token itself, not a file
-		Output:        "-",
+		Output:        outPath,
 	}
 
-	out := captureStdout(t, func() {
-		if err := v.verify(); err != nil {
-			t.Errorf("verify with inline token failed: %v", err)
-		}
-	})
-	if out != "inline token" {
-		t.Errorf("payload mismatch: %q", out)
+	if err := v.verify(); err != nil {
+		t.Errorf("verify with inline token failed: %v", err)
+	}
+	got, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "inline token" {
+		t.Errorf("payload mismatch: %q", got)
 	}
 }
 
