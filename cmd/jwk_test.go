@@ -233,6 +233,21 @@ func TestJWKGenerateValidation(t *testing.T) {
 			gen:     &jwkGenerater{KeyType: "RSA", KeySize: 2048, OutputFormat: "xml"},
 			wantErr: ErrInvalidKeyFormat,
 		},
+		{
+			name:    "oct with pem output is rejected",
+			gen:     &jwkGenerater{KeyType: "oct", KeySize: 256, OutputFormat: "pem"},
+			wantErr: ErrPemForOct,
+		},
+		{
+			name:    "oct with public-key is rejected",
+			gen:     &jwkGenerater{KeyType: "oct", KeySize: 256, OutputFormat: "json", PublicKey: true},
+			wantErr: ErrPublicKeyForOct,
+		},
+		{
+			name:    "OKP X25519 with pem output is rejected",
+			gen:     &jwkGenerater{KeyType: "OKP", Curve: "X25519", KeySize: 2048, OutputFormat: "pem"},
+			wantErr: ErrPemForX25519,
+		},
 	}
 
 	for _, tt := range tests {

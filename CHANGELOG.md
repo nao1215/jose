@@ -7,6 +7,27 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ## [Unreleased]
 
+### Added
+
+- Pipe support: `jws sign`, `jws verify`, `jws parse`, and `jwe encrypt`/`decrypt`
+  now read standard input when input is piped, so no explicit `-` is needed
+  (for example `echo ... | jose jws sign ...`).
+- `jws verify` accepts a compact JWS token directly as its argument, like
+  `jws parse` already did.
+
+### Fixed
+
+- `jose jwa` now lists only the algorithms, curves, and key types jose actually
+  accepts. Values the jwx library advertises but jose rejects (the `none` and
+  `Ed25519` signatures, the `X448` curve, `RSA-OAEP-384`/`RSA-OAEP-512` and the
+  HPKE key encryptions, the `AKP` key type) are filtered out.
+- `jws parse` and `jws verify` no longer treat a mistyped file name as a JWS
+  token. A value that is not shaped like a compact JWS is opened as a file, so a
+  typo reports "failed to open file" instead of a confusing parse error.
+- `jwk generate` rejects unsupported option combinations up front with a clear
+  message instead of surfacing an internal library error: `--output-format pem`
+  for `oct` and OKP `X25519` keys, and `--public-key` for `oct` keys.
+
 ### Changed
 
 - Migrated from jwx v2 (and the stray jwx v1 import in `jwa`) to jwx v4. The

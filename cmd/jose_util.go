@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"crypto/elliptic"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/lestrrat-go/jwx/v4/jwk"
+	"github.com/nao1215/gorky/file"
 )
 
 const (
@@ -27,8 +29,25 @@ func writeJSON(w io.Writer, v interface{}) error {
 	return nil
 }
 
+// stdinIsPipe reports whether standard input is connected to a pipe or a
+// redirection rather than an interactive terminal. It lets jose read piped
+// input ("echo ... | jose ...") even when no file argument is given. It is a
+// variable so tests can simulate a pipe.
+var stdinIsPipe = func() bool {
+	info, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return (info.Mode() & os.ModeCharDevice) == 0
+}
+
 func openInputFile(path string) (io.ReadCloser, error) {
 	if path == "" {
+		// No file was given. Read from stdin when input is piped so that
+		// "echo ... | jose ..." works without an explicit "-".
+		if stdinIsPipe() {
+			return io.NopCloser(os.Stdin), nil
+		}
 		return nil, ErrRequireFileName
 	}
 
@@ -41,6 +60,88 @@ func openInputFile(path string) (io.ReadCloser, error) {
 		return nil, wrap(ErrOpenFile, err.Error())
 	}
 	return f, nil
+}
+
+// readInput reads all bytes from the input named by path. path may be a file
+// path, "-" for stdin, or empty to read piped stdin. It is the payload/message
+// reader shared by sign, encrypt, and decrypt.
+func readInput(path string) ([]byte, error) {
+	src, err := openInputFile(path)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = src.Close()
+	}()
+
+	data, err := io.ReadAll(src)
+	if err != nil {
+		return nil, wrap(ErrReadFile, err.Error())
+	}
+	return data, nil
+}
+
+// looksLikeCompactJWS reports whether s has the shape of a compact JWS:
+// three base64url segments separated by dots, where the protected header
+// (the first segment) base64url-decodes to valid JSON. This lets jose tell an
+// inline token apart from a mistyped file name like "does-not-exist.jws".
+func looksLikeCompactJWS(s string) bool {
+	parts := strings.Split(s, ".")
+	if len(parts) != 3 {
+		return false
+	}
+	// The header and payload must be present; an unsecured JWS could have an
+	// empty signature, so only the first two segments are required.
+	if parts[0] == "" || parts[1] == "" {
+		return false
+	}
+	for _, p := range parts {
+		if !isBase64URL(p) {
+			return false
+		}
+	}
+	header, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return false
+	}
+	return json.Valid(header)
+}
+
+// isBase64URL reports whether s contains only base64url characters (the
+// unpadded alphabet used by compact JOSE serializations). An empty string is
+// allowed so an empty signature segment passes.
+func isBase64URL(s string) bool {
+	for _, r := range s {
+		switch {
+		case r >= 'A' && r <= 'Z':
+		case r >= 'a' && r <= 'z':
+		case r >= '0' && r <= '9':
+		case r == '-' || r == '_':
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+// readCompactJWS resolves the bytes of a JWS message from a positional
+// argument. The argument may be a file path, "-" for stdin, or an inline
+// compact JWS token; when arg is empty and stdin is piped it reads stdin. A
+// value that is neither an existing file nor a token-shaped string is treated
+// as a file path so that a typo reports "failed to open file" instead of a
+// confusing parse error.
+func readCompactJWS(arg string) ([]byte, error) {
+	switch {
+	case arg == "" || arg == "-":
+		// stdin (piped or "-"); fall through to openInputFile.
+	case file.IsFile(arg):
+		// existing file; fall through to openInputFile.
+	case looksLikeCompactJWS(arg):
+		return []byte(arg), nil
+		// default: not a file and not token-shaped; openInputFile reports the
+		// real file-open error below.
+	}
+	return readInput(arg)
 }
 
 type dummyWriteCloser struct {

@@ -26,6 +26,17 @@ Describe 'jose jwe'
     The output should equal '{"sub":"alice"}'
   End
 
+  It 'round-trips a payload piped through stdin'
+    roundtrip_pipe() {
+      cat "$WORK/payload.json" | jose jwe encrypt --key ec.jwk \
+        --key-encryption ECDH-ES --content-encryption A256GCM > "$WORK/secret.jwe"
+      cat "$WORK/secret.jwe" | jose jwe decrypt --key ec.jwk
+    }
+    When call roundtrip_pipe
+    The status should be success
+    The output should equal '{"sub":"alice"}'
+  End
+
   It 'round-trips with compression enabled'
     roundtrip_z() {
       jose jwe encrypt --key ec.jwk --key-encryption ECDH-ES \
