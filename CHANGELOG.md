@@ -7,6 +7,24 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-06-06
+
+### Fixed
+
+- The release workflow now completes. GoReleaser was failing on the Homebrew
+  tap publish step (`401 Bad credentials` against `nao1215/homebrew-tap`), which
+  aborted the whole release. Homebrew distribution is dropped for now so tagged
+  releases publish their binaries, archives, and packages again.
+
+### Changed
+
+- Modernized the GoReleaser config to drop deprecated keys: `snapshot`
+  uses `version_template`, the Windows archive override uses `formats: [zip]`,
+  and the deprecated `brews` section was removed.
+- Bumped dependencies: `github.com/go-playground/validator/v10` 10.30.1 → 10.30.3,
+  `github.com/charmbracelet/log` 0.4.2 → 1.0.0, and the
+  `goreleaser/goreleaser-action` GitHub Action 6 → 7.
+
 ## [0.2.0] - 2026-06-05
 
 ### Added
@@ -101,7 +119,8 @@ defaults explicit, and adds a thorough test suite.
 Pre-review development releases (0.0.1 through 0.0.8). See the git history and
 the [release page](https://github.com/nao1215/jose/releases) for details.
 
-[Unreleased]: https://github.com/nao1215/jose/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/nao1215/jose/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/nao1215/jose/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/nao1215/jose/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/nao1215/jose/compare/v0.0.8...v0.1.0
 [0.0.8]: https://github.com/nao1215/jose/releases/tag/v0.0.8
