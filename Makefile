@@ -1,4 +1,4 @@
-.PHONY: build test test-e2e test-fuzz lint clean demo demo-pipe tools help
+.PHONY: build test e2e test-fuzz lint clean demo demo-pipe tools help
 
 # jwx v4 uses encoding/json/v2, which is still gated behind GOEXPERIMENT=jsonv2
 # on Go 1.26. Export it for every go invocation in this Makefile.
@@ -26,8 +26,8 @@ test: ## Run unit tests with coverage (writes cover.out / cover.html)
 	env GOOS=$(GOOS) $(GO_TEST) -cover $(GO_PKGROOT) -coverprofile=cover.out
 	$(GO_TOOL) cover -html=cover.out -o cover.html
 
-test-e2e: build ## Run shellspec end-to-end tests against the built binary
-	shellspec --shell sh
+e2e: ## Run atago end-to-end tests against the freshly built binary
+	./e2e/run.sh
 
 FUZZ_TIME ?= 20s
 test-fuzz: ## Run each fuzz target for FUZZ_TIME (default 20s)
@@ -62,11 +62,11 @@ demo-pipe: build ## Regenerate the pipe gif from doc/img/pipe.tape (needs vhs)
 	rm -rf $(DEMO_PIPE_DIR) $(DEMO_BIN)
 	@echo 'Wrote doc/img/pipe.gif'
 
-tools: ## Install developer tools (linter, coverage, shellspec for e2e)
+tools: ## Install developer tools (linter, coverage, atago for e2e)
 	$(GO_INSTALL) github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 	$(GO_INSTALL) github.com/k1LoW/octocov@latest
 	$(GO_INSTALL) github.com/charmbracelet/vhs@latest
-	curl -fsSL https://git.io/shellspec | sh -s 0.28.1 --yes
+	$(GO_INSTALL) github.com/nao1215/atago@latest
 
 .DEFAULT_GOAL := help
 help:

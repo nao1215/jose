@@ -22,15 +22,12 @@ installed with:
 make tools
 ```
 
-`make tools` installs `shellspec` under `~/.local`, so make sure `~/.local/bin`
-is on your `PATH`.
-
 ## Common Commands
 
 ```bash
 make build      # build the jose binary
 make test       # unit tests with coverage (writes cover.out / cover.html)
-make test-e2e   # shellspec end-to-end tests against the built binary
+make e2e        # atago end-to-end tests against a freshly built binary
 make test-fuzz  # run each fuzz target for a short time (FUZZ_TIME=20s)
 make lint       # golangci-lint
 make demo       # regenerate doc/img/demo.gif from the vhs tape (needs vhs)
@@ -60,15 +57,16 @@ go test ./cmd/ -run='^$' -fuzz=FuzzJWSParse -fuzztime=2m
 
 ### End-to-end tests
 
-The `spec/` directory holds shellspec tests that drive the built binary the way
-a user does. Run them with `make test-e2e`, or directly with `shellspec --shell
-sh` after `make build`.
+The `e2e/atago/` directory holds plain-YAML
+[atago](https://github.com/nao1215/atago) specs that drive the built binary the
+way a user does. Run them with `make e2e`, or directly with `e2e/run.sh` (which
+also accepts atago flags, e.g. `e2e/run.sh --filter jws`).
 
 ## Pull Request Expectations
 
 - keep CLI behavior and error messages consistent
-- add or update tests for new behavior, including a `spec/` test for CLI changes
-- run `make test` and `make test-e2e` before opening a PR
+- add or update tests for new behavior, including an `e2e/atago/` spec for CLI changes
+- run `make test` and `make e2e` before opening a PR
 - run `make lint` when changing Go code
 
 ## CI
@@ -77,7 +75,7 @@ GitHub Actions runs the following workflows, and every gate is reproducible
 locally with the `make` targets above:
 
 - `linux_test.yml`, `mac_test.yml`, `windows.yml`: run `go test ./...` (`make test`)
-- `e2e_test.yml`: run the shellspec end-to-end tests on Linux and macOS (`make test-e2e`)
+- `e2e_test.yml`: run the atago end-to-end tests on Linux and macOS (`make e2e`)
 - `fuzz.yml`: run the fuzz targets briefly (`make test-fuzz`)
 - `reviewdog.yml`: comment on lint and misspell issues in pull requests
 - `release.yml`: build and publish release artifacts from git tags with GoReleaser

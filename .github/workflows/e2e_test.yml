@@ -7,13 +7,16 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 env:
   # jwx v4 uses encoding/json/v2, gated behind this experiment on Go 1.26.
   GOEXPERIMENT: jsonv2
 
 jobs:
-  shellspec:
-    name: shellspec (binary e2e)
+  e2e:
+    name: E2E (atago)
 
     strategy:
       matrix:
@@ -26,19 +29,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
 
-      - name: Install shellspec
-        run: |
-          curl -fsSL https://git.io/shellspec | sh -s 0.28.1 --yes
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Install atago
+        uses: nao1215/setup-atago@e4b6719aea547a68e6c15252222babab7f492a88 # v0.1.1
+        with:
+          version: v0.2.0
 
-      - name: Build jose
-        run: make build
-
-      - name: Run shellspec end-to-end tests
-        run: shellspec --shell sh
+      - name: Run end-to-end tests
+        run: make e2e

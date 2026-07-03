@@ -7,6 +7,12 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ## [Unreleased]
 
+### Changed
+
+- The end-to-end suite is now driven by [atago](https://github.com/nao1215/atago)
+  (`e2e/atago/*.atago.yaml` + `e2e/run.sh`, `make e2e`) instead of shellspec;
+  the specs cover the same CLI surface (`spec/` and `.shellspec` are removed).
+
 ## [0.2.1] - 2026-06-06
 
 ### Fixed
