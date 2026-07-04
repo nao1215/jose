@@ -1,4 +1,4 @@
-.PHONY: build test e2e test-fuzz lint clean demo demo-pipe tools help
+.PHONY: build test coverage e2e test-fuzz lint clean demo demo-pipe tools help
 
 # jwx v4 uses encoding/json/v2, which is still gated behind GOEXPERIMENT=jsonv2
 # on Go 1.26. Export it for every go invocation in this Makefile.
@@ -20,11 +20,14 @@ build: ## Build binary
 	env GO111MODULE=on GOOS=$(GOOS) GOARCH=$(GOARCH) $(GO_BUILD) $(GO_LDFLAGS) -o $(APP) main.go
 
 clean: ## Clean project
-	-rm -rf $(APP) cover.out cover.html
+	-rm -rf $(APP) cover.out cover.html .coverage
 
 test: ## Run unit tests with coverage (writes cover.out / cover.html)
 	env GOOS=$(GOOS) $(GO_TEST) -cover $(GO_PKGROOT) -coverprofile=cover.out
 	$(GO_TOOL) cover -html=cover.out -o cover.html
+
+coverage: ## Combine unit + self-hosted E2E coverage into cover.out / cover.html (builds a `go build -cover` jose; scratch under .coverage/, needs atago on PATH)
+	bash ./scripts/coverage.sh
 
 e2e: ## Run atago end-to-end tests against the freshly built binary
 	./e2e/run.sh
