@@ -28,6 +28,8 @@ jobs:
         with:
           go-version-file: "go.mod"
 
-      - name: Run tests with coverage report output
-        run: go test ./... -coverprofile=coverage.out
-      - uses: k1LoW/octocov-action@v1
+      # Coverage reporting to octocov lives in the dedicated Coverage workflow
+      # (.github/workflows/coverage.yml), which reports the combined unit + E2E
+      # number. This job just runs the unit tests on Linux.
+      - name: Run unit tests
+        run: go test ./...

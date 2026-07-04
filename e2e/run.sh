@@ -10,6 +10,13 @@
 # isolated ${workdir}, so no external fixtures are needed.
 #
 # Usage: e2e/run.sh [atago args...]        (e.g. e2e/run.sh --filter jws)
+#
+# Coverage mode (used by `make coverage`, NOT by `make e2e`): set COVER=1 to
+# build jose with `go build -cover` instead of a plain build, so the binary the
+# specs exercise emits Go runtime coverage. The caller must also export
+# GOCOVERDIR to a pre-created directory; atago passes the environment through to
+# the jose child process (no spec uses clear_env), so each jose invocation
+# writes its own covdata there. The DEFAULT (COVER unset) path is unchanged.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -26,8 +33,14 @@ cleanup() { rm -rf "$TMP"; }
 trap cleanup EXIT
 mkdir -p "$TMP/bin"
 
-echo "e2e: building jose (GOEXPERIMENT=jsonv2)..."
-(cd "$REPO_ROOT" && env GOEXPERIMENT=jsonv2 CGO_ENABLED=0 go build -o "$TMP/bin/jose" main.go)
+if [ "${COVER:-}" = "1" ]; then
+	echo "e2e: building coverage-instrumented jose (GOEXPERIMENT=jsonv2, -cover)..."
+	(cd "$REPO_ROOT" && env GOEXPERIMENT=jsonv2 CGO_ENABLED=0 \
+		go build -cover -covermode=atomic -coverpkg=./... -o "$TMP/bin/jose" main.go)
+else
+	echo "e2e: building jose (GOEXPERIMENT=jsonv2)..."
+	(cd "$REPO_ROOT" && env GOEXPERIMENT=jsonv2 CGO_ENABLED=0 go build -o "$TMP/bin/jose" main.go)
+fi
 
 # Put the e2e-built jose first on PATH so the specs exercise that binary.
 export PATH="$TMP/bin:$PATH"

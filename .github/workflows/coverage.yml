@@ -1,0 +1,55 @@
+name: Coverage
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# octocov reports/diffs coverage to the Actions-artifact datastore and comments
+# on pull requests, so it needs more than the default read-only token.
+permissions:
+  contents: read
+  actions: write
+  pull-requests: write
+
+env:
+  # jwx v4 uses encoding/json/v2, gated behind this experiment on Go 1.26.
+  GOEXPERIMENT: jsonv2
+
+jobs:
+  coverage:
+    name: Coverage (unit + e2e)
+
+    strategy:
+      matrix:
+        platform: [ubuntu-latest]
+
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+
+      - name: Install atago
+        uses: nao1215/setup-atago@e4b6719aea547a68e6c15252222babab7f492a88 # v0.1.1
+        with:
+          version: v0.2.0
+
+      # Combines unit-test coverage with self-hosted E2E coverage (E2E runs a
+      # `go build -cover` jose and collects covdata via GOCOVERDIR), then merges
+      # both into cover.out. The E2E specs are hermetic and need no services.
+      - name: Run combined unit + E2E coverage
+        run: make coverage
+
+      - uses: k1LoW/octocov-action@v1
+        with:
+          config: .octocov.yml
+          args: --report=cover.out
