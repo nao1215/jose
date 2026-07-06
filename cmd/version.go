@@ -14,16 +14,28 @@ var (
 	Name = "jose" //nolint
 )
 
+// resolveVersion returns the jose version string, preferring the value set by
+// ldflags and falling back to the module build info, then to "unknown".
+func resolveVersion() string {
+	if Version != "" {
+		return Version
+	}
+	if buildInfo, ok := debug.ReadBuildInfo(); ok && buildInfo.Main.Version != "" {
+		return buildInfo.Main.Version
+	}
+	return "unknown"
+}
+
+// versionLine returns the single line printed by both "jose version" and
+// "jose --version" so the two never drift apart.
+func versionLine() string {
+	return fmt.Sprintf("%s version %s (under MIT LICENSE)", Name, resolveVersion())
+}
+
 // getVersion return jose command version.
 // Version global variable is set by ldflags.
 func getVersion(_ *cobra.Command, _ []string) {
-	version := "unknown"
-	if Version != "" {
-		version = Version
-	} else if buildInfo, ok := debug.ReadBuildInfo(); ok {
-		version = buildInfo.Main.Version
-	}
-	fmt.Printf("%s version %s (under MIT LICENSE)\n", Name, version)
+	fmt.Println(versionLine())
 }
 
 func newVersionCmd() *cobra.Command {

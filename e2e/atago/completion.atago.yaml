@@ -1,4 +1,3 @@
-# Migrated from jose's ShellSpec spec/completion_spec.sh.
 # completion writes a shell script to stdout for an explicit shell and must not
 # create files or edit shell configuration. A missing or unknown shell is an
 # error. Each scenario runs the real jose binary inside its isolated ${workdir}.
@@ -56,14 +55,15 @@ scenarios:
             empty: false
 
   - name: does not create files in the working directory
-    # completion writes only to stdout; the workdir must stay empty afterward.
+    # completion writes only to stdout; the workdir delta must be empty. The
+    # sandbox_home guard also proves it never touches the user's HOME.
     steps:
       - run:
-          shell: true
-          command: |
-            jose completion zsh > /dev/null
-            ls -A
+          sandbox_home: true
+          command: jose completion zsh
       - assert:
           exit_code: 0
-          stdout:
-            empty: true
+          changes:
+            created: []
+            modified: []
+            deleted: []

@@ -198,7 +198,7 @@ $ jose completion fish > ~/.config/fish/completions/jose.fish
 
 Other commands:
 
-- `jose version`: print the version.
+- `jose version` (or `jose --version` / `jose -v`): print the version.
 - `jose man`: install man pages under /usr/share/man/man1 (needs root).
 - `jose bug-report`: open a pre-filled GitHub issue in your browser, including
   your jose version and runtime information.

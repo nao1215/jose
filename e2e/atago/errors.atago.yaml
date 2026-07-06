@@ -1,0 +1,115 @@
+# Error-surface contracts shared across subcommands: writing --output into a
+# directory that does not exist must fail with a clear "failed to create file",
+# and a key file that holds more than one key must be rejected up front (jose
+# signs and encrypts in single-key mode). The nonexistent-directory path is a
+# workdir-relative name so the contract is identical on POSIX and Windows.
+# Run with:
+#   make e2e   (or e2e/run.sh)
+version: "1"
+
+suite:
+  name: jose error surfaces
+
+scenarios:
+  - name: jwk generate reports a create error for an unwritable output path
+    steps:
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --output missing-dir/key.jwk
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "failed to create file"
+
+  - name: jws sign reports a create error for an unwritable output path
+    steps:
+      - &payload
+        fixture:
+          file: payload.json
+          content: '{"sub":"alice"}'
+      - &genec
+        run:
+          command: jose jwk generate --type EC --curve P-256 --output ec.jwk
+      - run:
+          command: jose jws sign --algorithm ES256 --key ec.jwk --output missing-dir/token.jws payload.json
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "failed to create file"
+
+  - name: jws verify reports a create error for an unwritable output path
+    steps:
+      - *payload
+      - *genec
+      - run:
+          command: jose jws sign --algorithm ES256 --key ec.jwk --output token.jws payload.json
+      - run:
+          command: jose jws verify --algorithm ES256 --key ec.jwk --output missing-dir/out.txt token.jws
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "failed to create file"
+
+  - name: jwe encrypt reports a create error for an unwritable output path
+    steps:
+      - *payload
+      - *genec
+      - run:
+          command: jose jwe encrypt --key ec.jwk --key-encryption ECDH-ES --content-encryption A256GCM --output missing-dir/c.jwe payload.json
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "failed to create file"
+
+  - name: jwe decrypt reports a create error for an unwritable output path
+    steps:
+      - *payload
+      - *genec
+      - run:
+          command: jose jwe encrypt --key ec.jwk --key-encryption ECDH-ES --content-encryption A256GCM --output c.jwe payload.json
+      - run:
+          command: jose jwe decrypt --key ec.jwk --output missing-dir/out.txt c.jwe
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "failed to create file"
+
+  - name: jws sign rejects a key file holding more than one key
+    steps:
+      - *payload
+      - &twokeys
+        fixture:
+          file: set.jwk
+          content: '{"keys":[{"kty":"oct","k":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA"},{"kty":"oct","k":"AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8g"}]}'
+      - run:
+          command: jose jws sign --algorithm HS256 --key set.jwk payload.json
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "exactly one key"
+
+  - name: jwe encrypt rejects a key file holding more than one key
+    steps:
+      - *payload
+      - *twokeys
+      - run:
+          command: jose jwe encrypt --key set.jwk --key-encryption A256KW --content-encryption A256GCM payload.json
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "exactly one key"
+
+  - name: jwe decrypt rejects a key file holding more than one key
+    steps:
+      - *payload
+      - &onekey
+        run:
+          command: jose jwk generate --type oct --size 256 --output single.jwk
+      - run:
+          command: jose jwe encrypt --key single.jwk --key-encryption A256KW --content-encryption A256GCM --output c.jwe payload.json
+      - *twokeys
+      - run:
+          command: jose jwe decrypt --key set.jwk c.jwe
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "exactly one key"

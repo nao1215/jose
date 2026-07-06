@@ -33,18 +33,25 @@ cleanup() { rm -rf "$TMP"; }
 trap cleanup EXIT
 mkdir -p "$TMP/bin"
 
+# On Windows (Git Bash / MSYS) the built binary and PATH lookups need the .exe
+# suffix, otherwise atago's exec cannot find "jose".
+BIN="jose"
+case "$(uname -s)" in
+MINGW* | MSYS* | CYGWIN*) BIN="jose.exe" ;;
+esac
+
 if [ "${COVER:-}" = "1" ]; then
 	echo "e2e: building coverage-instrumented jose (GOEXPERIMENT=jsonv2, -cover)..."
 	(cd "$REPO_ROOT" && env GOEXPERIMENT=jsonv2 CGO_ENABLED=0 \
-		go build -cover -covermode=atomic -coverpkg=./... -o "$TMP/bin/jose" main.go)
+		go build -cover -covermode=atomic -coverpkg=./... -o "$TMP/bin/$BIN" main.go)
 else
 	echo "e2e: building jose (GOEXPERIMENT=jsonv2)..."
-	(cd "$REPO_ROOT" && env GOEXPERIMENT=jsonv2 CGO_ENABLED=0 go build -o "$TMP/bin/jose" main.go)
+	(cd "$REPO_ROOT" && env GOEXPERIMENT=jsonv2 CGO_ENABLED=0 go build -o "$TMP/bin/$BIN" main.go)
 fi
 
 # Put the e2e-built jose first on PATH so the specs exercise that binary.
 export PATH="$TMP/bin:$PATH"
 
-echo "e2e: jose $("$TMP/bin/jose" version | head -1)"
+echo "e2e: jose $("$TMP/bin/$BIN" version | head -1)"
 # Extra args (e.g. --filter X) go before the path so the flag parser sees them.
 atago run "$@" "$SCRIPT_DIR/atago"

@@ -1,7 +1,10 @@
-# Migrated from jose's ShellSpec spec/jwk_spec.sh.
-# jwk generate: key types, the curve matrix, the bit-sized oct key, and the
-# overwrite regression that left garbage trailing a shorter key. Each scenario
-# runs the real jose binary inside its isolated ${workdir}. Run with:
+# jose jwk generate: key types, the curve matrix, output formats, the bit-size
+# rules for RSA/oct, the PEM-support rejections, and the overwrite regression.
+#
+# These specs are shell-free (no `shell: true`): input files come from
+# `fixture:`, output goes to jose's own `--output`, and file/state contracts are
+# checked with `file:`/`changes:`. That keeps them portable — atago execs the
+# real jose binary directly on Linux, macOS, and Windows. Run with:
 #   make e2e   (or e2e/run.sh)
 version: "1"
 
@@ -31,10 +34,41 @@ scenarios:
               - "BEGIN"
               - "PRIVATE KEY"
 
+  - name: generates an RSA key in PEM format
+    steps:
+      - run:
+          command: jose jwk generate --type RSA --size 2048 --output-format pem
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - "BEGIN"
+              - "PRIVATE KEY"
+
   - name: generates an OKP Ed25519 key
     steps:
       - run:
           command: jose jwk generate --type OKP --curve Ed25519
+      - assert:
+          exit_code: 0
+          stdout:
+            contains: "OKP"
+
+  - name: generates an OKP Ed25519 key in PEM format
+    steps:
+      - run:
+          command: jose jwk generate --type OKP --curve Ed25519 --output-format pem
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - "BEGIN"
+              - "PRIVATE KEY"
+
+  - name: generates an OKP X25519 key as JSON
+    steps:
+      - run:
+          command: jose jwk generate --type OKP --curve X25519
       - assert:
           exit_code: 0
           stdout:
@@ -49,6 +83,37 @@ scenarios:
           stdout:
             contains: "oct"
 
+  - name: generates an oct key at the default size
+    # --size is omitted; jose must fall back to the 2048-bit default without
+    # error rather than treating the missing flag as an invalid size.
+    steps:
+      - run:
+          command: jose jwk generate --type oct
+      - assert:
+          exit_code: 0
+          stdout:
+            contains: "oct"
+
+  - name: writes the key to a file and touches nothing else
+    # --output writes a single file; sandbox_home + changes prove jose creates
+    # exactly that file and does not pollute HOME or the working directory.
+    steps:
+      - run:
+          sandbox_home: true
+          command: jose jwk generate --type EC --curve P-256 --output ec.jwk
+      - assert:
+          exit_code: 0
+          changes:
+            created: [ec.jwk]
+            modified: []
+            deleted: []
+      - assert:
+          file:
+            path: ec.jwk
+            contains:
+              - '"kty"'
+              - '"crv"'
+
   - name: emits a public key without private fields
     steps:
       - run:
@@ -61,12 +126,24 @@ scenarios:
           stdout:
             not_contains: '"d"'
 
+  - name: emits a public EC key in PEM format
+    steps:
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --public-key --output-format pem
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - "BEGIN"
+              - "PUBLIC KEY"
+
   - name: rejects the unsupported OKP X448 curve
     steps:
       - run:
           command: jose jwk generate --type OKP --curve X448
       - assert:
           exit_code: { not: 0 }
+          stdout: { empty: true }
           stderr:
             contains: "OKP supports"
 
@@ -79,6 +156,15 @@ scenarios:
           stderr:
             contains: "OKP supports"
 
+  - name: rejects an unknown EC curve
+    steps:
+      - run:
+          command: jose jwk generate --type EC --curve P-999
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "EC supports"
+
   - name: requires a curve for EC keys
     steps:
       - run:
@@ -87,6 +173,71 @@ scenarios:
           exit_code: { not: 0 }
           stderr:
             contains: "require --curve"
+
+  - name: requires a curve for OKP keys
+    steps:
+      - run:
+          command: jose jwk generate --type OKP
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "require --curve"
+
+  - name: rejects a key type it cannot generate
+    steps:
+      - run:
+          command: jose jwk generate --type BOGUS
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "key type"
+
+  - name: rejects an oct key size below the minimum
+    steps:
+      - run:
+          command: jose jwk generate --type oct --size 100
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "multiple of 8"
+
+  - name: rejects an oct key size that is not a multiple of 8
+    steps:
+      - run:
+          command: jose jwk generate --type oct --size 300
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "multiple of 8"
+
+  - name: rejects an RSA key size below the minimum
+    steps:
+      - run:
+          command: jose jwk generate --type RSA --size 100
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "multiple of 8"
+
+  - name: rejects an insecure 512-bit RSA key
+    # 512 passes jose's own size check (>= 256, multiple of 8) but Go's crypto/rsa
+    # refuses to generate an insecure key, and jose surfaces that as a failure.
+    steps:
+      - run:
+          command: jose jwk generate --type RSA --size 512
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "RSA"
+
+  - name: rejects a 1024-bit RSA key jwx considers too small
+    steps:
+      - run:
+          command: jose jwk generate --type RSA --size 1024
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "2048"
 
   - name: rejects PEM output for oct keys
     steps:
@@ -98,6 +249,26 @@ scenarios:
             contains:
               - "oct"
               - "json"
+
+  - name: rejects PEM output for OKP X25519 keys
+    # X25519 maps to crypto/ecdh, which the PEM encoder cannot frame as X.509,
+    # so jose rejects it up front with a clear message instead of a library error.
+    steps:
+      - run:
+          command: jose jwk generate --type OKP --curve X25519 --output-format pem
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "X25519"
+
+  - name: rejects an unknown output format
+    steps:
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --output-format xml
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "json or pem"
 
   - name: rejects --public-key for oct keys
     steps:
@@ -114,12 +285,14 @@ scenarios:
     # parses, because jwk.ReadFile rejects trailing garbage.
     steps:
       - run:
-          shell: true
-          command: |
-            jose jwk generate --type RSA --size 4096 --output key.jwk
-            jose jwk generate --type EC --curve P-256 --output key.jwk
-            printf 'hello' > msg.txt
-            jose jws sign --algorithm ES256 --key key.jwk msg.txt
+          command: jose jwk generate --type RSA --size 4096 --output key.jwk
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --output key.jwk
+      - fixture:
+          file: msg.txt
+          content: hello
+      - run:
+          command: jose jws sign --algorithm ES256 --key key.jwk msg.txt
       - assert:
           exit_code: 0
           stdout:

@@ -25,8 +25,13 @@ func newManCmd() *cobra.Command {
 	return cmd
 }
 
+// manInstallDir is where `jose man` installs the generated pages. It is a
+// variable so tests can redirect it to a temporary directory instead of the
+// system path (which needs root).
+var manInstallDir = filepath.Join("/", "usr", "share", "man", "man1")
+
 func man(_ *cobra.Command, _ []string) error {
-	return generateManpages(filepath.Join("/", "usr", "share", "man", "man1"))
+	return generateManpages(manInstallDir)
 }
 
 func generateManpages(dst string) error {
