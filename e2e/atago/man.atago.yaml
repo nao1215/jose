@@ -1,0 +1,24 @@
+# jose man installs man pages under /usr/share/man/man1, which needs root. This
+# spec pins the unprivileged contract: without write access jose must fail
+# clearly rather than silently. It is POSIX-only (man pages, /usr/share layout)
+# and gated to non-root so a privileged CI container does not actually install
+# files. Run with:
+#   make e2e   (or e2e/run.sh)
+version: "1"
+
+suite:
+  name: jose man
+
+scenarios:
+  - name: man reports an error when it cannot write the man directory
+    skip:
+      os: windows
+    only:
+      command: test "$(id -u)" != "0"
+    steps:
+      - run:
+          command: jose man
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            empty: false

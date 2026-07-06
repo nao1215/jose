@@ -23,6 +23,7 @@ jobs:
         os:
           - "ubuntu-latest"
           - "macos-latest"
+          - "windows-latest"
       fail-fast: false
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
@@ -40,7 +41,11 @@ jobs:
       - name: Install atago
         uses: nao1215/setup-atago@e4b6719aea547a68e6c15252222babab7f492a88 # v0.1.1
         with:
-          version: v0.2.0
+          version: v0.5.1
 
+      # The atago specs are shell-free (no `shell: true`), so they drive the real
+      # jose binary directly on every OS. run.sh is a bash bootstrap; on Windows
+      # it runs under Git Bash, which windows-latest ships.
       - name: Run end-to-end tests
-        run: make e2e
+        shell: bash
+        run: ./e2e/run.sh

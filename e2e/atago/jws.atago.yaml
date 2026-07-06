@@ -1,9 +1,13 @@
-# Migrated from jose's ShellSpec spec/jws_spec.sh.
-# jws sign / verify / parse end to end, including input-path equivalence (file,
-# stdin, inline argument) and the required-algorithm behavior. The ShellSpec
-# `setup` seeds an EC P-256 key (ec.jwk), a payload (payload.json) and a signed
-# token (token.jws); here that seed is a shared `&setup` run step replayed at the
-# start of every scenario inside its isolated ${workdir}. Run with:
+# jose jws sign / verify / parse end to end: input-path equivalence (file,
+# piped stdin, "-", inline token argument), the required-algorithm contract,
+# the signature-algorithm matrix (ES/RS/HS/EdDSA), PEM keys, match-kid, and the
+# error surfaces (missing key, bad key-format, unparseable message).
+#
+# Shell-free and portable: the payload comes from a `fixture:`, the signed token
+# from jose's own `--output` or is captured with `store:` for the inline-argument
+# case, and piped input is delivered with `stdin: {file: ...}`. The shared setup
+# steps are YAML anchors (&payload, &genec, &signtoken) replayed at the start of
+# each scenario inside its isolated ${workdir}. Run with:
 #   make e2e   (or e2e/run.sh)
 version: "1"
 
@@ -13,13 +17,13 @@ suite:
 scenarios:
   - name: sign requires an algorithm
     steps:
-      - &setup
+      - &payload
+        fixture:
+          file: payload.json
+          content: '{"sub":"alice"}'
+      - &genec
         run:
-          shell: true
-          command: |
-            printf '{"sub":"alice"}' > payload.json
-            jose jwk generate --type EC --curve P-256 --output ec.jwk >/dev/null
-            jose jws sign --algorithm ES256 --key ec.jwk payload.json > token.jws
+          command: jose jwk generate --type EC --curve P-256 --output ec.jwk
       - run:
           command: jose jws sign --key ec.jwk payload.json
       - assert:
@@ -27,32 +31,150 @@ scenarios:
           stderr:
             contains: "signature algorithm"
 
+  - name: sign rejects an invalid algorithm
+    steps:
+      - *payload
+      - *genec
+      - run:
+          command: jose jws sign --algorithm BOGUS --key ec.jwk payload.json
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "signature algorithm"
+
+  - name: sign requires a key
+    steps:
+      - *payload
+      - run:
+          command: jose jws sign --algorithm ES256 payload.json
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "key file required"
+
+  - name: sign reports a missing key file
+    steps:
+      - *payload
+      - run:
+          command: jose jws sign --algorithm ES256 --key does-not-exist.jwk payload.json
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "failed to open file"
+
+  - name: verify requires a key
+    # Validation rejects a missing --key before any token is read, so no setup
+    # is needed.
+    steps:
+      - run:
+          command: jose jws verify --algorithm ES256 whatever.jws
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "key file required"
+
   - name: sign signs a payload into a compact JWS
     steps:
-      - *setup
+      - *payload
+      - *genec
       - run:
           command: jose jws sign --algorithm ES256 --key ec.jwk payload.json
       - assert:
           exit_code: 0
-      # Compact JWS has two dots.
-      - assert:
+          # A compact JWS is three base64url segments joined by two dots.
           stdout:
-            contains: "."
+            matches: "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
 
-  - name: sign signs a payload read from stdin via a pipe
+  - name: sign signs a payload read from piped stdin
     steps:
-      - *setup
+      - *payload
+      - *genec
       - run:
-          shell: true
-          command: cat payload.json | jose jws sign --algorithm ES256 --key ec.jwk
+          command: jose jws sign --algorithm ES256 --key ec.jwk
+          stdin:
+            file: payload.json
       - assert:
           exit_code: 0
           stdout:
-            contains: "."
+            matches: "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
+
+  - name: sign writes the token to a file and touches nothing else
+    steps:
+      - *payload
+      - *genec
+      - run:
+          sandbox_home: true
+          command: jose jws sign --algorithm ES256 --key ec.jwk --output token.jws payload.json
+      - assert:
+          exit_code: 0
+          changes:
+            created: [token.jws]
+            modified: []
+            deleted: []
+
+  - name: round-trips a payload with an RSA RS256 key
+    steps:
+      - *payload
+      - run:
+          command: jose jwk generate --type RSA --size 2048 --output rsa.jwk
+      - run:
+          command: jose jws sign --algorithm RS256 --key rsa.jwk --output token.jws payload.json
+      - run:
+          command: jose jws verify --algorithm RS256 --key rsa.jwk token.jws
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: '{"sub":"alice"}'
+
+  - name: round-trips a payload with an EdDSA OKP key
+    steps:
+      - *payload
+      - run:
+          command: jose jwk generate --type OKP --curve Ed25519 --output ed.jwk
+      - run:
+          command: jose jws sign --algorithm EdDSA --key ed.jwk --output token.jws payload.json
+      - run:
+          command: jose jws verify --algorithm EdDSA --key ed.jwk token.jws
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: '{"sub":"alice"}'
+
+  - name: round-trips a payload with an HS256 symmetric key
+    steps:
+      - *payload
+      - run:
+          command: jose jwk generate --type oct --size 256 --output oct.jwk
+      - run:
+          command: jose jws sign --algorithm HS256 --key oct.jwk --output token.jws payload.json
+      - run:
+          command: jose jws verify --algorithm HS256 --key oct.jwk token.jws
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: '{"sub":"alice"}'
+
+  - name: round-trips a payload with a PEM-encoded key
+    steps:
+      - *payload
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --output-format pem --output ec.pem
+      - run:
+          command: jose jws sign --algorithm ES256 --key ec.pem --key-format pem --output token.jws payload.json
+      - run:
+          command: jose jws verify --algorithm ES256 --key ec.pem --key-format pem token.jws
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: '{"sub":"alice"}'
 
   - name: verify verifies and prints the payload
     steps:
-      - *setup
+      - *payload
+      - *genec
+      - &signtoken
+        run:
+          command: jose jws sign --algorithm ES256 --key ec.jwk --output token.jws payload.json
       - run:
           command: jose jws verify --algorithm ES256 --key ec.jwk token.jws
       - assert:
@@ -61,30 +183,81 @@ scenarios:
             equals: '{"sub":"alice"}'
 
   - name: verify verifies a token passed directly as an argument
+    # No shell substitution: sign to stdout, capture the compact token with
+    # store, then pass ${token} as the positional argument.
     steps:
-      - *setup
+      - *payload
+      - *genec
       - run:
-          shell: true
-          command: jose jws verify --algorithm ES256 --key ec.jwk "$(cat token.jws)"
+          command: jose jws sign --algorithm ES256 --key ec.jwk payload.json
+      - store:
+          name: token
+          from:
+            stdout:
+              matches: "[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+"
+      - run:
+          command: jose jws verify --algorithm ES256 --key ec.jwk ${token}
       - assert:
           exit_code: 0
           stdout:
             equals: '{"sub":"alice"}'
 
-  - name: verify verifies a token read from stdin via a pipe
+  - name: verify verifies a token read from piped stdin
     steps:
-      - *setup
+      - *payload
+      - *genec
+      - *signtoken
       - run:
-          shell: true
-          command: cat token.jws | jose jws verify --algorithm ES256 --key ec.jwk
+          command: jose jws verify --algorithm ES256 --key ec.jwk
+          stdin:
+            file: token.jws
       - assert:
           exit_code: 0
           stdout:
             equals: '{"sub":"alice"}'
+
+  - name: verify reads the token from stdin with the "-" argument
+    steps:
+      - *payload
+      - *genec
+      - *signtoken
+      - run:
+          command: jose jws verify --algorithm ES256 --key ec.jwk -
+          stdin:
+            file: token.jws
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: '{"sub":"alice"}'
+
+  - name: verify requires an algorithm without match-kid
+    steps:
+      - *payload
+      - *genec
+      - *signtoken
+      - run:
+          command: jose jws verify --key ec.jwk token.jws
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "signature algorithm"
+
+  - name: verify rejects an invalid key format
+    steps:
+      - *payload
+      - *genec
+      - *signtoken
+      - run:
+          command: jose jws verify --algorithm ES256 --key-format xml --key ec.jwk token.jws
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "json or pem"
 
   - name: verify reports a missing file instead of a parse error
     steps:
-      - *setup
+      - *payload
+      - *genec
       - run:
           command: jose jws verify --algorithm ES256 --key ec.jwk does-not-exist.jws
       - assert:
@@ -94,7 +267,9 @@ scenarios:
 
   - name: verify fails with the wrong key
     steps:
-      - *setup
+      - *payload
+      - *genec
+      - *signtoken
       - run:
           command: jose jwk generate --type EC --curve P-256 --output other.jwk
       - run:
@@ -104,9 +279,45 @@ scenarios:
           stderr:
             contains: "verify"
 
+  - name: match-kid verifies against the key whose kid matches
+    # A symmetric key carrying both alg and kid; jose copies the kid into the
+    # signed header, and match-kid selects it by that kid.
+    steps:
+      - *payload
+      - &octkid
+        fixture:
+          file: oct.jwk
+          content: '{"kty":"oct","k":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA","alg":"HS256","kid":"my-key"}'
+      - run:
+          command: jose jws sign --algorithm HS256 --key oct.jwk --output token.jws payload.json
+      - run:
+          command: jose jws verify --match-kid --key oct.jwk token.jws
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: '{"sub":"alice"}'
+
+  - name: match-kid fails when no key matches the message kid
+    steps:
+      - *payload
+      - *octkid
+      - run:
+          command: jose jws sign --algorithm HS256 --key oct.jwk --output token.jws payload.json
+      - fixture:
+          file: other.jwk
+          content: '{"kty":"oct","k":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA","alg":"HS256","kid":"other-key"}'
+      - run:
+          command: jose jws verify --match-kid --key other.jwk token.jws
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "verify"
+
   - name: parse prints the payload from a file
     steps:
-      - *setup
+      - *payload
+      - *genec
+      - *signtoken
       - run:
           command: jose jws parse token.jws
       - assert:
@@ -116,10 +327,17 @@ scenarios:
 
   - name: parse prints the payload from an inline token argument
     steps:
-      - *setup
+      - *payload
+      - *genec
       - run:
-          shell: true
-          command: jose jws parse "$(cat token.jws)"
+          command: jose jws sign --algorithm ES256 --key ec.jwk payload.json
+      - store:
+          name: token
+          from:
+            stdout:
+              matches: "[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+"
+      - run:
+          command: jose jws parse ${token}
       - assert:
           exit_code: 0
           stdout:
@@ -127,10 +345,13 @@ scenarios:
 
   - name: parse prints the payload from stdin
     steps:
-      - *setup
+      - *payload
+      - *genec
+      - *signtoken
       - run:
-          shell: true
-          command: cat token.jws | jose jws parse -
+          command: jose jws parse -
+          stdin:
+            file: token.jws
       - assert:
           exit_code: 0
           stdout:
@@ -138,7 +359,9 @@ scenarios:
 
   - name: parse prints all parts with --all
     steps:
-      - *setup
+      - *payload
+      - *genec
+      - *signtoken
       - run:
           command: jose jws parse --all token.jws
       - assert:
@@ -150,10 +373,22 @@ scenarios:
 
   - name: parse reports a missing file instead of a parse error
     steps:
-      - *setup
+      - *payload
       - run:
           command: jose jws parse does-not-exist.jws
       - assert:
           exit_code: { not: 0 }
           stderr:
             contains: "failed to open file"
+
+  - name: parse reports a parse error on a non-JWS file
+    steps:
+      - fixture:
+          file: bad.txt
+          content: "this is not a jws token"
+      - run:
+          command: jose jws parse bad.txt
+      - assert:
+          exit_code: { not: 0 }
+          stderr:
+            contains: "failed to parse message"

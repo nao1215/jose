@@ -8,13 +8,17 @@ import (
 
 func newRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "jose",
-		Short: "jose is toolset for JSON Object Signing and Encryption (JOSE).",
+		Use:     "jose",
+		Short:   "jose is toolset for JSON Object Signing and Encryption (JOSE).",
+		Version: resolveVersion(),
 	}
 
 	cmd.CompletionOptions.DisableDefaultCmd = true
 	cmd.SilenceUsage = true
 	cmd.SilenceErrors = true
+	// "jose --version" prints the same line as the "version" subcommand so the
+	// two never drift apart.
+	cmd.SetVersionTemplate(versionLine() + "\n")
 
 	cmd.AddCommand(newVersionCmd())
 	cmd.AddCommand(newCompletionCmd())

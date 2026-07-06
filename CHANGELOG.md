@@ -7,11 +7,23 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ## [Unreleased]
 
+### Added
+
+- `jose --version` (and `-v`) now print the version, matching the `jose version`
+  subcommand. Previously a bare `jose --version` failed with "unknown flag".
+
 ### Changed
 
 - The end-to-end suite is now driven by [atago](https://github.com/nao1215/atago)
-  (`e2e/atago/*.atago.yaml` + `e2e/run.sh`, `make e2e`) instead of shellspec;
-  the specs cover the same CLI surface (`spec/` and `.shellspec` are removed).
+  (`e2e/atago/*.atago.yaml` + `e2e/run.sh`, `make e2e`) instead of shellspec.
+- The atago suite grew to 512 shell-free scenarios (from 45) that exercise the
+  real binary across the full JWS signature matrix, the JWE key-encryption ×
+  content-encryption matrix (plain, `--compress`, and header-inferred decrypt),
+  and the JWK type/curve/size/format matrix, plus the state-change (`--output`),
+  input-path (file, piped stdin, `-`, inline token), and error-surface contracts.
+  Because the specs are shell-free they now run on Windows in CI as well as Linux
+  and macOS, and the generator lives in `scripts/gen_e2e.py`.
+- Combined unit + E2E coverage is now gated at 90% in `.octocov.yml`.
 
 ## [0.2.1] - 2026-06-06
 

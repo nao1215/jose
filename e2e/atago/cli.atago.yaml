@@ -1,6 +1,6 @@
-# Migrated from jose's ShellSpec spec/cli_spec.sh.
-# CLI surface: root help, --help, version, unknown command, and `jwa` algorithm
-# listings (key types / signatures / curves / key-encryption) plus the
+# CLI surface: root help, --help, the version subcommand and the --version/-v
+# flags, unknown command, and the `jwa` algorithm listings (key types /
+# signatures / curves / key-encryption / content-encryption) plus the
 # missing-option error. None of these need files; each runs the real jose binary
 # directly inside its isolated ${workdir}. Run with:
 #   make e2e   (or e2e/run.sh)
@@ -35,7 +35,7 @@ scenarios:
               - "Usage:"
               - "jwa"
 
-  - name: version prints the version
+  - name: version subcommand prints the version
     steps:
       - run:
           command: jose version
@@ -45,6 +45,132 @@ scenarios:
             contains:
               - "jose version"
               - "MIT LICENSE"
+
+  - name: the --version flag prints the same version line
+    # jose is a JOSE toolkit, but a bare `jose --version` should still answer
+    # like every other CLI instead of failing with "unknown flag".
+    steps:
+      - run:
+          command: jose --version
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - "jose version"
+              - "MIT LICENSE"
+
+  - name: the -v flag prints the version line
+    steps:
+      - run:
+          command: jose -v
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - "jose version"
+              - "MIT LICENSE"
+
+  - name: jwk help documents generate
+    steps:
+      - run:
+          command: jose jwk --help
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - "generate"
+              - "JSON Web Key"
+
+  - name: jwk generate help documents its flags
+    steps:
+      - run:
+          command: jose jwk generate --help
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - "--type"
+              - "--curve"
+              - "--output-format"
+
+  - name: jws help documents sign, verify, and parse
+    steps:
+      - run:
+          command: jose jws --help
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - "sign"
+              - "verify"
+              - "parse"
+
+  - name: jws sign help documents the algorithm flag
+    steps:
+      - run:
+          command: jose jws sign --help
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - "--algorithm"
+              - "--key"
+
+  - name: jws verify help documents match-kid
+    steps:
+      - run:
+          command: jose jws verify --help
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - "--match-kid"
+              - "--algorithm"
+
+  - name: jwe help documents encrypt and decrypt
+    steps:
+      - run:
+          command: jose jwe --help
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - "encrypt"
+              - "decrypt"
+
+  - name: jwe encrypt help documents the encryption flags
+    steps:
+      - run:
+          command: jose jwe encrypt --help
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - "--key-encryption"
+              - "--content-encryption"
+
+  - name: completion help documents the shells
+    steps:
+      - run:
+          command: jose completion --help
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - "bash"
+              - "zsh"
+              - "fish"
+
+  - name: jwa help documents its listing flags
+    steps:
+      - run:
+          command: jose jwa --help
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - "--key-type"
+              - "--signature"
 
   - name: unknown command fails and reports the unknown command
     steps:
@@ -115,6 +241,17 @@ scenarios:
             not_contains:
               - "RSA-OAEP-384"
               - "HPKE"
+
+  - name: jwa lists the content encryption algorithms
+    steps:
+      - run:
+          command: jose jwa --content-encryption
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - "A128GCM"
+              - "A256GCM"
 
   - name: jwa fails when no option is given
     steps:
