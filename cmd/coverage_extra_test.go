@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/lestrrat-go/jwx/v4/jwk"
+	"github.com/lestrrat-go/jwx/v4/jws"
 )
 
 // failingWriter fails every Write, to exercise the write-error branch of
@@ -74,6 +75,42 @@ func TestWriteJWKSetMultipleKeys(t *testing.T) {
 	}
 	if !strings.Contains(b.String(), "\"keys\"") {
 		t.Errorf("multi-key JSON should contain a keys array:\n%s", b.String())
+	}
+}
+
+func octSet(t testing.TB, n int) jwk.Set {
+	t.Helper()
+	set := jwk.NewSet()
+	for i := 0; i < n; i++ {
+		raw := make([]byte, 32)
+		raw[0] = byte(i + 1)
+		key, err := jwk.Import[jwk.Key](raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := key.Set(jwk.KeyIDKey, string(rune('a'+i))); err != nil {
+			t.Fatal(err)
+		}
+		if err := set.AddKey(key); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return set
+}
+
+func TestWriteJWKSetJSONWriteErrorSingleKey(t *testing.T) {
+	t.Parallel()
+	g := &jwkGenerater{OutputFormat: "json", KeySet: octSet(t, 1)}
+	if err := g.writeJWKSet(failingWriter{}); !errors.Is(err, ErrWriteJSON) {
+		t.Errorf("want ErrWriteJSON, got %v", err)
+	}
+}
+
+func TestWriteJWKSetJSONWriteErrorMultiKey(t *testing.T) {
+	t.Parallel()
+	g := &jwkGenerater{OutputFormat: "json", KeySet: octSet(t, 2)}
+	if err := g.writeJWKSet(failingWriter{}); !errors.Is(err, ErrWriteJSON) {
+		t.Errorf("want ErrWriteJSON, got %v", err)
 	}
 }
 
@@ -204,6 +241,17 @@ func TestJWEDecryptReportsCorruptMessage(t *testing.T) {
 	}
 	if err := d.decrypt(); !errors.Is(err, ErrDecrypt) {
 		t.Errorf("want ErrDecrypt, got %v", err)
+	}
+}
+
+func TestPrintAllWriteError(t *testing.T) {
+	t.Parallel()
+	msg, err := jws.Parse([]byte(sampleJWS))
+	if err != nil {
+		t.Fatalf("parse sample JWS: %v", err)
+	}
+	if err := printAll(failingWriter{}, msg); err == nil {
+		t.Error("printAll should fail when the writer fails")
 	}
 }
 

@@ -82,24 +82,26 @@ func runJWSParse(cmd *cobra.Command, args []string) error {
 	}
 
 	if jwsParser.all {
-		return printAll(msg)
+		return printAll(os.Stdout, msg)
 	}
 	fmt.Fprintf(os.Stdout, "%s", string(msg.Payload()))
 	return nil
 }
 
-// printAll prints all information about JWS message. It prints payload, header and signature.
-func printAll(msg *jws.Message) error {
-	fmt.Fprintf(os.Stdout, "Payload: %s\n", msg.Payload())
+// printAll prints all information about a JWS message: payload, header, and
+// signatures. The destination is a parameter so the output can be redirected
+// and its write errors exercised.
+func printAll(w io.Writer, msg *jws.Message) error {
+	fmt.Fprintf(w, "Payload: %s\n", msg.Payload())
 
-	fmt.Fprint(os.Stdout, "JWS: ")
-	if err := writeJSON(os.Stdout, msg); err != nil {
+	fmt.Fprint(w, "JWS: ")
+	if err := writeJSON(w, msg); err != nil {
 		return err
 	}
 
 	for i, sig := range msg.Signatures() {
-		fmt.Fprintf(os.Stdout, "Signature %d: ", i)
-		if err := writeJSON(os.Stdout, sig.ProtectedHeaders()); err != nil {
+		fmt.Fprintf(w, "Signature %d: ", i)
+		if err := writeJSON(w, sig.ProtectedHeaders()); err != nil {
 			return err
 		}
 	}
