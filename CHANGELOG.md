@@ -7,6 +7,13 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-06
+
+A test and portability release: the end-to-end suite grew from 45 to 511
+shell-free atago scenarios that drive the real binary across jose's full JOSE
+contract surface and now run on Windows as well as Linux and macOS, and a bare
+`jose --version` finally works.
+
 ### Added
 
 - `jose --version` (and `-v`) now print the version, matching the `jose version`
@@ -16,7 +23,7 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 - The end-to-end suite is now driven by [atago](https://github.com/nao1215/atago)
   (`e2e/atago/*.atago.yaml` + `e2e/run.sh`, `make e2e`) instead of shellspec.
-- The atago suite grew to 512 shell-free scenarios (from 45) that exercise the
+- The atago suite grew to 511 shell-free scenarios (from 45) that exercise the
   real binary across the full JWS signature matrix, the JWE key-encryption ×
   content-encryption matrix (plain, `--compress`, and header-inferred decrypt),
   and the JWK type/curve/size/format matrix, plus the state-change (`--output`),
@@ -137,7 +144,8 @@ defaults explicit, and adds a thorough test suite.
 Pre-review development releases (0.0.1 through 0.0.8). See the git history and
 the [release page](https://github.com/nao1215/jose/releases) for details.
 
-[Unreleased]: https://github.com/nao1215/jose/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/nao1215/jose/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/nao1215/jose/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/nao1215/jose/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/nao1215/jose/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/nao1215/jose/compare/v0.0.8...v0.1.0
