@@ -1,11 +1,11 @@
 ![Coverage](https://raw.githubusercontent.com/nao1215/octocovs-central-repo/main/badges/nao1215/jose/coverage.svg)
 ![Test Execution Time](https://raw.githubusercontent.com/nao1215/octocovs-central-repo/main/badges/nao1215/jose/time.svg)
-[![Go Report Card](https://goreportcard.com/badge/github.com/nao1215/jose)](https://goreportcard.com/report/github.com/nao1215/jose)
 [![reviewdog](https://github.com/nao1215/jose/actions/workflows/reviewdog.yml/badge.svg)](https://github.com/nao1215/jose/actions/workflows/reviewdog.yml)
 [![LinuxUnitTest](https://github.com/nao1215/jose/actions/workflows/linux_test.yml/badge.svg)](https://github.com/nao1215/jose/actions/workflows/linux_test.yml)
 [![MacUnitTest](https://github.com/nao1215/jose/actions/workflows/mac_test.yml/badge.svg)](https://github.com/nao1215/jose/actions/workflows/mac_test.yml)
 [![WindowsUnitTest](https://github.com/nao1215/jose/actions/workflows/windows.yml/badge.svg)](https://github.com/nao1215/jose/actions/workflows/windows.yml)
 [![E2E](https://github.com/nao1215/jose/actions/workflows/e2e_test.yml/badge.svg)](https://github.com/nao1215/jose/actions/workflows/e2e_test.yml)
+[![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/nao1215/jose/total)](https://github.com/nao1215/jose/releases)
 
 # jose
 
