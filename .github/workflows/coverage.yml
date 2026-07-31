@@ -49,7 +49,7 @@ jobs:
       - name: Run combined unit + E2E coverage
         run: make coverage
 
-      - uses: k1LoW/octocov-action@v1.5.1
+      - uses: k1LoW/octocov-action@v1.5.2
         with:
           config: .octocov.yml
           args: --report=cover.out
