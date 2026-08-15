@@ -146,12 +146,13 @@ func TestOpenOutputFile(t *testing.T) {
 	})
 }
 
+// Not parallel, at either level: the "Open stdin" case replaces os.Stdin, which
+// is process-global, while "Not specify file name" reads it through
+// stdinIsPipe. Run in parallel the two raced, and the -race build failed the
+// whole package at random — most often on macOS, whose runners interleave
+// differently.
 func TestOpenInputFile(t *testing.T) {
-	t.Parallel()
-
 	t.Run("Open stdin", func(t *testing.T) {
-		t.Parallel()
-
 		oldStdin := os.Stdin
 		defer func() {
 			os.Stdin = oldStdin

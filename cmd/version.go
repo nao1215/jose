@@ -8,7 +8,12 @@ import (
 )
 
 var (
-	// Version value is set by ldflags
+	// Version value is set by ldflags.
+	//
+	// A test that writes to this must not call t.Parallel: newRootCmd reads it
+	// through resolveVersion, so a write from one parallel test races every
+	// other parallel test that builds a command. Prefer passing the version to
+	// the function under test, the way bugReportBody takes it.
 	Version string //nolint
 	// Name is cli command name
 	Name = "jose" //nolint

@@ -9,8 +9,15 @@ import (
 
 // withStdinPipe replaces os.Stdin with a pipe carrying data and forces
 // stdinIsPipe to report a pipe, restoring both when the test ends.
+//
+// The caller must not be a parallel test: os.Stdin and stdinIsPipe are shared by
+// the whole package, so replacing them from one parallel test corrupts every
+// other test reading input at the same time. t.Setenv is the guard — it panics
+// when the calling test has called t.Parallel, which turns that mistake into a
+// named failure at the call site instead of a data race CI hits at random.
 func withStdinPipe(t *testing.T, data string) {
 	t.Helper()
+	t.Setenv("JOSE_TEST_STDIN_REPLACED", "1")
 
 	r, w, err := os.Pipe()
 	if err != nil {
