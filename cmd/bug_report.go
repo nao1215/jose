@@ -23,21 +23,17 @@ stdout so you can paste it into a new issue by hand.`,
 
 var openBrowserFunc = openBrowser //nolint
 
-// version returns the jose version string, falling back to "unknown" when it
-// was not set at build time.
-func version() string {
-	if Version != "" {
-		return Version
-	}
-	return "unknown"
-}
-
 // bugReportBody builds the Markdown issue body, including the runtime details
 // that make a report actionable.
-func bugReportBody() string {
+//
+// The version is a parameter rather than a read of the Version global so a test
+// can exercise the template without writing to that global. Writing to it from a
+// parallel test raced with every other parallel test that builds a root command,
+// since newRootCmd reads the same variable through resolveVersion.
+func bugReportBody(version string) string {
 	var buf bytes.Buffer
 
-	fmt.Fprintf(&buf, "## jose version\n%s\n\n", version())
+	fmt.Fprintf(&buf, "## jose version\n%s\n\n", version)
 	fmt.Fprintf(&buf, "## Environment\n- OS: %s\n- Architecture: %s\n- Go: %s\n\n",
 		runtime.GOOS, runtime.GOARCH, runtime.Version())
 	buf.WriteString("## Description (About the problem)\nA clear description of the bug encountered.\n\n")
@@ -49,7 +45,7 @@ func bugReportBody() string {
 }
 
 func bugReport(_ *cobra.Command, _ []string) error {
-	body := bugReportBody()
+	body := bugReportBody(resolveVersion())
 	target := "https://github.com/nao1215/jose/issues/new?title=[Bug Report] Title&body=" + url.QueryEscape(body)
 
 	if !openBrowserFunc(target) {

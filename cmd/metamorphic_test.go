@@ -20,6 +20,12 @@ func parsePayload(t *testing.T, args []string, stdin string) string {
 	t.Helper()
 
 	if stdin != "" {
+		// os.Stdin is shared by the whole package, so a parallel caller would
+		// corrupt every other test reading input. t.Setenv panics when the
+		// calling test has called t.Parallel, naming the mistake instead of
+		// leaving a data race for CI to find. See withStdinPipe in input_test.go.
+		t.Setenv("JOSE_TEST_STDIN_REPLACED", "1")
+
 		oldStdin := os.Stdin
 		r, w, err := os.Pipe()
 		if err != nil {

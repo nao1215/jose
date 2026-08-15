@@ -29,11 +29,7 @@ func TestBugReportHelp(t *testing.T) {
 func TestBugReportBodyContainsSystemInfo(t *testing.T) {
 	t.Parallel()
 
-	orgVer := Version
-	Version = "v1.0.0"
-	defer func() { Version = orgVer }()
-
-	body := bugReportBody()
+	body := bugReportBody("v1.0.0")
 
 	wants := []string{
 		"## jose version\nv1.0.0",
@@ -59,6 +55,8 @@ func TestBugReportBodyContainsSystemInfo(t *testing.T) {
 	}
 }
 
+// Not parallel: it writes the Version global, which every parallel test that
+// builds a root command reads through resolveVersion.
 func TestBugReportFallbackWhenBrowserUnavailable(t *testing.T) {
 	orgVer := Version
 	Version = "v1.0.0"
@@ -79,6 +77,37 @@ func TestBugReportFallbackWhenBrowserUnavailable(t *testing.T) {
 	}
 	if !strings.Contains(out, "## jose version") {
 		t.Errorf("fallback output missing template body:\n%s", out)
+	}
+}
+
+// A bug report must name the version `jose version` names. bugReportBody used to
+// resolve the version itself, and its resolver stopped at the Version global
+// where resolveVersion falls back to the module build info — so a binary
+// installed with `go install`, which sets no ldflags, filed reports saying
+// "unknown" while `jose version` printed the real version.
+//
+// Not parallel: captureStdout redirects os.Stdout for the whole process.
+func TestBugReportNamesTheVersionTheVersionCommandNames(t *testing.T) {
+	orgOpen := openBrowserFunc
+	openBrowserFunc = func(string) bool { return false }
+	defer func() { openBrowserFunc = orgOpen }()
+
+	orgVer := Version
+	Version = ""
+	defer func() { Version = orgVer }()
+
+	out := captureStdout(t, func() {
+		if err := bugReport(newRootCmd(), nil); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	want := "## jose version\n" + resolveVersion()
+	if !strings.Contains(out, want) {
+		t.Errorf("bug report does not name the version %q that `jose version` reports:\n%s", resolveVersion(), out)
+	}
+	if strings.Contains(out, "## jose version\nunknown") && resolveVersion() != "unknown" {
+		t.Errorf("bug report fell back to \"unknown\" while resolveVersion() has %q", resolveVersion())
 	}
 }
 
