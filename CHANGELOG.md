@@ -7,10 +7,16 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-08-15
+
 ### Fixed
 
 - `jose bug-report` names the version `jose version` names. It resolved the version through its own helper, which stopped at the `Version` variable set by ldflags, while `jose version` falls back to the module build info — so a binary installed with `go install`, which sets no ldflags, filed reports saying `unknown` about a build whose version was knowable. Both now go through `resolveVersion`.
 - The unit test suite no longer races under `-race`. Two tests replaced process-global state while marked `t.Parallel()`: one wrote the `Version` variable that every parallel test building a root command reads, and one replaced `os.Stdin` while a sibling read it through `stdinIsPipe`. The suite failed at random, most often on the macOS runner. `bugReportBody` now takes the version as an argument instead of reading the global, the stdin cases run serially, and the two helpers that replace `os.Stdin` call `t.Setenv` so a future parallel caller panics with a named error at the call site rather than leaving a race for CI to find.
+
+### Changed
+
+- Bumped `github.com/lestrrat-go/jwx/v4` 4.0.2 → 4.2.0, the library that implements the JOSE primitives jose wraps.
 
 ## [0.3.0] - 2026-07-06
 
@@ -149,7 +155,8 @@ defaults explicit, and adds a thorough test suite.
 Pre-review development releases (0.0.1 through 0.0.8). See the git history and
 the [release page](https://github.com/nao1215/jose/releases) for details.
 
-[Unreleased]: https://github.com/nao1215/jose/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/nao1215/jose/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/nao1215/jose/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/nao1215/jose/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/nao1215/jose/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/nao1215/jose/compare/v0.1.0...v0.2.0
