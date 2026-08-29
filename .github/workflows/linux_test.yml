@@ -11,22 +11,39 @@ env:
   # jwx v4 uses encoding/json/v2, gated behind this experiment on Go 1.26.
   GOEXPERIMENT: jsonv2
 
+# These jobs only read the checkout; nothing here publishes or writes back.
+permissions:
+  contents: read
+
 jobs:
   unit_test:
     name: Unit test (linux)
 
+    # The matrix is the floor and the ceiling of the supported Go range. The
+    # floor is what go.mod declares (jwx v4 needs encoding/json/v2, which is
+    # gated behind GOEXPERIMENT=jsonv2 on Go 1.26), and running it here is the
+    # only place that claim is checked. "stable" tracks the newest release,
+    # which is what catches new vet checks and runtime behavior changes -- note
+    # it is "stable" and not "1", because setup-go resolves "1" from its own
+    # manifest, which lags behind a fresh Go release. Every non-test workflow
+    # uses "stable" too: go.mod states the oldest Go a user may build jose
+    # from, not the toolchain CI should ship artifacts with.
     strategy:
+      fail-fast: false
       matrix:
         platform: [ubuntu-latest]
+        go: ["1.26", "stable"]
 
     runs-on: ${{ matrix.platform }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-go@v7
         with:
-          go-version-file: "go.mod"
+          go-version: ${{ matrix.go }}
 
       # Coverage reporting to octocov lives in the dedicated Coverage workflow
       # (.github/workflows/coverage.yml), which reports the combined unit + E2E
