@@ -29,19 +29,19 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
-          go-version-file: "go.mod"
+          go-version: "stable"
 
       - name: Install atago
         uses: nao1215/setup-atago@e4b6719aea547a68e6c15252222babab7f492a88 # v0.1.1
         with:
-          version: v0.20.0
+          version: v0.21.0
 
       # The atago specs are shell-free (no `shell: true`), so they drive the real
       # jose binary directly on every OS. run.sh is a bash bootstrap; on Windows
