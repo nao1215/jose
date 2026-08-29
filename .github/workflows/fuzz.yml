@@ -11,6 +11,10 @@ env:
   # jwx v4 uses encoding/json/v2, gated behind this experiment on Go 1.26.
   GOEXPERIMENT: jsonv2
 
+# These jobs only read the checkout; nothing here publishes or writes back.
+permissions:
+  contents: read
+
 jobs:
   fuzz:
     name: Short fuzz smoke test
@@ -19,6 +23,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@v7
