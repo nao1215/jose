@@ -6,7 +6,7 @@ require (
 	github.com/charmbracelet/log v1.0.0
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/google/go-cmp v0.7.0
-	github.com/lestrrat-go/jwx/v4 v4.4.0
+	github.com/lestrrat-go/jwx/v4 v4.5.0
 	github.com/nao1215/gorky v0.2.1
 	github.com/spf13/cobra v1.10.2
 )
@@ -39,7 +39,7 @@ require (
 	github.com/valyala/fastjson v1.6.10 // indirect
 	github.com/xo/terminfo v1.0.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
+	golang.org/x/crypto v0.56.0 // indirect
 	golang.org/x/exp v0.0.0-20260824195058-e88cd73687aa // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
