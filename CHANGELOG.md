@@ -7,6 +7,8 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-09-12
+
 ### Changed
 
 - Bumped `github.com/lestrrat-go/jwx/v4` 4.2.0 to 4.4.0, the library that implements the JOSE primitives jose wraps, along with `go-playground/validator`, `spf13/pflag`, `golang.org/x/crypto`, `golang.org/x/text` and the charmbracelet dependencies. The `go` directive stays at 1.26.0.
