@@ -10,7 +10,8 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 ### Changed
 
 - Bumped `github.com/lestrrat-go/jwx/v4` 4.2.0 to 4.4.0, the library that implements the JOSE primitives jose wraps, along with `go-playground/validator`, `spf13/pflag`, `golang.org/x/crypto`, `golang.org/x/text` and the charmbracelet dependencies. The `go` directive stays at 1.26.0.
-- The end-to-end suite runs against atago v0.21.0, and every workflow moves to `actions/checkout@v7`.
+- Bumped `github.com/lestrrat-go/jwx/v4` to 4.5.0 and `go-playground/validator` to 10.30.4 on 2026-09-12, along with `golang.org/x/crypto` 0.57.0, `golang.org/x/sys` 0.48.0, `golang.org/x/term` 0.46.0 and `golang.org/x/text` 0.42.0. The x family now declares `go 1.26.0`, which this module already required, so nothing moved.
+- The end-to-end suite runs against atago v0.22.0, and every workflow moves to `actions/checkout@v7`.
 - The unit tests run on both ends of the supported Go range (1.26 and the newest release) across Linux, macOS and Windows, instead of a single go.mod-derived version. Every other job builds with the current stable toolchain, so release artifacts, the E2E run, the fuzz job and coverage carry the newest runtime fixes rather than the floor.
 
 ### Tests
