@@ -1,4 +1,4 @@
-.PHONY: build test coverage e2e test-fuzz lint clean demo demo-pipe tools help
+.PHONY: build test coverage e2e test-fuzz lint bench bench-compare clean demo demo-pipe tools help
 
 # jwx v4 uses encoding/json/v2, which is still gated behind GOEXPERIMENT=jsonv2
 # on Go 1.26. Export it for every go invocation in this Makefile.
@@ -42,6 +42,12 @@ test-fuzz: ## Run each fuzz target for FUZZ_TIME (default 20s)
 lint: ## Run golangci-lint
 	golangci-lint run --config .golangci.yml
 
+bench: ## Measure jose with the himorime suite in bench/ (requires himorime on PATH)
+	himorime run bench
+
+bench-compare: ## Compare main with the working tree on the himorime suite (BASE=main)
+	himorime compare --against $${BASE:-main} bench
+
 DEMO_BIN = /tmp/$(APP)
 DEMO_DIR = /tmp/$(APP)-demo
 
@@ -70,6 +76,7 @@ tools: ## Install developer tools (linter, coverage, atago for e2e)
 	$(GO_INSTALL) github.com/k1LoW/octocov@latest
 	$(GO_INSTALL) github.com/charmbracelet/vhs@latest
 	$(GO_INSTALL) github.com/nao1215/atago@latest
+	$(GO_INSTALL) github.com/nao1215/himorime@latest
 
 .DEFAULT_GOAL := help
 help:
