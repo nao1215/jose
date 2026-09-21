@@ -99,6 +99,28 @@ A GitHub Star motivates continued development.
 
 [![Star History Chart](https://api.star-history.com/svg?repos=nao1215/jose&type=Date)](https://star-history.com/#nao1215/jose&Date)
 
+## Contributors ✨
+
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="http://www.elza.ru/"><img src="https://avatars.githubusercontent.com/u/20461314?v=4?s=64" width="64px;" alt="M.Onyshchuk"/><br /><sub><b>M.Onyshchuk</b></sub></a><br /><a href="https://github.com/nao1215/jose/issues?q=author%3Am-onyshchuk" title="Bug reports">🐛</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
+
 ## Contact
 
 To report a bug or request a feature, open a [GitHub Issue](https://github.com/nao1215/jose/issues),
