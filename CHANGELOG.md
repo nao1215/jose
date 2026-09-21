@@ -7,6 +7,8 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-09-21
+
 ### Changed
 
 - Dependencies: go-playground/validator v10.30.5 and indirect updates (universal-translator, go-runewidth, xo/terminfo, golang.org/x/exp). The Go floor stays at 1.26.
