@@ -134,10 +134,25 @@ func labelOnlyKey(set jwk.Set, params keyParameters) error {
 	}
 	key, _ := set.Key(0)
 
+	// The labels land on top of what the key already carries, so check the
+	// result rather than the flags alone: --alg ES256 on a key that says
+	// "use":"enc" would otherwise publish a key that contradicts itself.
+	effective := params
+	if effective.Algorithm == "" {
+		if alg, ok := key.Algorithm(); ok {
+			effective.Algorithm = alg.String()
+		}
+	}
+	if effective.Use == "" {
+		if use, ok := key.KeyUsage(); ok {
+			effective.Use = use
+		}
+	}
+
 	// oct keys never get here (they have no public half), so the size, which
 	// only oct algorithms depend on, does not matter.
 	keyType, curve := describeJWK(key)
-	if err := params.valid(keyType, curve, 0); err != nil {
+	if err := effective.valid(keyType, curve, 0); err != nil {
 		return err
 	}
 	return params.setOn(key)

@@ -66,7 +66,9 @@ jose jwk public --set key.jwk
 | `--output`, `-o` | Output file. Default standard output. |
 
 `--kid`, `--alg`, and `--use` label a key that has no such parameters yet, such
-as a PEM key made by openssl.
+as a PEM key made by openssl. They may replace what the key already carries,
+but the result must be consistent: `--alg ES256` on a key that says
+`"use":"enc"` is rejected.
 
 ## jose jws sign
 

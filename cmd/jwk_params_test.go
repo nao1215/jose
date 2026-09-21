@@ -344,6 +344,48 @@ func TestLabelOnlyKey(t *testing.T) {
 		}
 	})
 
+	// The key's own alg and use count: a label must agree with what the key
+	// already says, not only with the other flags.
+	t.Run("rejects an alg that contradicts the key's use", func(t *testing.T) {
+		t.Parallel()
+		enc := genKeyWith(t, &jwkGenerater{KeyType: "EC", Curve: "P-256", Use: "enc"})
+		set, err := publicKeysOf([]string{enc}, "json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := labelOnlyKey(set, keyParameters{Algorithm: "ES256"}); !errors.Is(err, ErrKeyUseMismatch) {
+			t.Errorf("err = %v, want %v", err, ErrKeyUseMismatch)
+		}
+	})
+
+	t.Run("rejects a use that contradicts the key's alg", func(t *testing.T) {
+		t.Parallel()
+		sig := genKeyWith(t, &jwkGenerater{KeyType: "EC", Curve: "P-256", Algorithm: "ES256"})
+		set, err := publicKeysOf([]string{sig}, "json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := labelOnlyKey(set, keyParameters{Use: "enc"}); !errors.Is(err, ErrKeyUseMismatch) {
+			t.Errorf("err = %v, want %v", err, ErrKeyUseMismatch)
+		}
+	})
+
+	t.Run("replaces an alg when the result is consistent", func(t *testing.T) {
+		t.Parallel()
+		sig := genKeyWith(t, &jwkGenerater{KeyType: "EC", Curve: "P-256", Algorithm: "ES256", Use: "sig"})
+		set, err := publicKeysOf([]string{sig}, "json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := labelOnlyKey(set, keyParameters{Algorithm: "ECDH-ES", Use: "enc"}); err != nil {
+			t.Fatal(err)
+		}
+		key, _ := set.Key(0)
+		if use, _ := key.KeyUsage(); use != "enc" {
+			t.Errorf("use = %q, want enc", use)
+		}
+	})
+
 	t.Run("rejects more than one key", func(t *testing.T) {
 		t.Parallel()
 		a := genKey(t, "EC", "P-256", 2048, "json", false)

@@ -319,7 +319,8 @@ printf '{"sub":"alice","iat":%s}' "$(date +%s)" |
 ```
 
 Verify with the algorithm you expect. jose never takes the algorithm from the
-token itself, which is what makes algorithm-confusion attacks possible:
+token's own `alg` header, which the sender controls; trusting it is what makes
+algorithm-confusion attacks possible:
 
 ```shell
 jose jws verify --algorithm ES256 --key jwks.json token.jwt

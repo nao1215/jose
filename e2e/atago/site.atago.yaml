@@ -206,6 +206,29 @@ scenarios:
           stderr:
             contains: "need exactly one input key"
 
+  - name: "reference: jwk public labels must agree with what the key carries"
+    steps:
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --use enc --output enc.jwk
+      - run:
+          command: jose jwk public --alg ES256 enc.jwk
+      - assert:
+          exit_code: 1
+          stdout:
+            empty: true
+          stderr:
+            contains: "--use does not match --alg"
+      - run:
+          command: jose jwk public --alg ECDH-ES enc.jwk
+      - assert:
+          exit_code: 0
+          stdout:
+            json:
+              - path: "$.alg"
+                equals: ECDH-ES
+              - path: "$.use"
+                equals: enc
+
   - name: "reference: jwk public reads a private key from a pipe"
     steps:
       - run:

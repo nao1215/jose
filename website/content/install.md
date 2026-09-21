@@ -35,6 +35,10 @@ for Linux. `checksums.txt` on the same page lists the SHA-256 of every file:
 sha256sum --ignore-missing -c checksums.txt
 ```
 
+Where `sha256sum` is missing, print the hash of the file you downloaded and
+compare it with its line in `checksums.txt`: `shasum -a 256 FILE` on macOS, or
+`Get-FileHash FILE` in PowerShell on Windows.
+
 ## Check the installation
 
 ```shell

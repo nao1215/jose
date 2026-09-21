@@ -49,8 +49,8 @@ echo '{"sub":"alice"}' | jose jws sign --algorithm ES256 --key ec.jwk > token.jw
 jose jws verify --algorithm ES256 --key ec.jwk token.jws
 ```
 
-Every command reads a pipe too, and `jws parse` and `jws verify` take a token
-inline:
+Every command that reads a message or a key file also reads a pipe, and
+`jws parse` and `jws verify` take a token inline:
 
 ![pipe](./doc/img/pipe.gif)
 
@@ -78,12 +78,13 @@ covers the client metadata, a hand-signed client assertion, and key rotation.
 | Encrypt and decrypt | `jose jwe encrypt`, `jose jwe decrypt` |
 | List the algorithm names jose accepts | `jose jwa` |
 
-Every command reads a file, `-`, or a pipe, and writes to standard output or
-`--output`; errors go to standard error with exit status 1. The
+Every command that reads a message or a key file takes a file, `-`, or a pipe.
+Results go to standard output or `--output`, and errors go to standard error
+with exit status 1. The
 [reference](https://nao1215.github.io/jose/reference/) lists every flag.
 
-The shell blocks in this README, on the website, and in the cookbook are run
-word for word by the end-to-end suite ([atago](https://github.com/nao1215/atago)
+The shell blocks in this README, on the website, and in the cookbook, apart
+from the install commands, are run word for word by the end-to-end suite ([atago](https://github.com/nao1215/atago)
 specs under `e2e/atago/`), and `cmd/docs_test.go` fails when a block is not.
 
 ## Contributing
