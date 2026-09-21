@@ -26,6 +26,12 @@ archives:
     format_overrides:
       - goos: windows
         formats: [zip]
+release:
+  # A re-run of the release workflow (for example after a failed Homebrew
+  # step) re-uploads every artifact. Replace the ones already on the release
+  # instead of failing on "already_exists", so the re-run reaches the steps
+  # that failed.
+  replace_existing_artifacts: true
 checksum:
   name_template: "checksums.txt"
 snapshot:
