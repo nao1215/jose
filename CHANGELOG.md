@@ -7,6 +7,8 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-21
+
 ### Added
 
 - A documentation website at https://nao1215.github.io/jose/, built with Hugo and published to GitHub Pages: a home page, an install page, a reference of every command and flag, and a cookbook. The cookbook is `doc/cookbook.md`, mounted into the site, and covers generating and labeling keys, publishing and rotating a JWKS, the keys of an atproto (Bluesky) OAuth confidential client, a DPoP proof by hand, JWT signing and verification, HMAC, JWE with public and shared keys, openssl PEM keys, choosing an algorithm, and scripting.
@@ -190,7 +192,10 @@ defaults explicit, and adds a thorough test suite.
 Pre-review development releases (0.0.1 through 0.0.8). See the git history and
 the [release page](https://github.com/nao1215/jose/releases) for details.
 
-[Unreleased]: https://github.com/nao1215/jose/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/nao1215/jose/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/nao1215/jose/compare/v0.3.3...v0.4.0
+[0.3.3]: https://github.com/nao1215/jose/compare/v0.3.2...v0.3.3
+[0.3.2]: https://github.com/nao1215/jose/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/nao1215/jose/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/nao1215/jose/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/nao1215/jose/compare/v0.2.0...v0.2.1
