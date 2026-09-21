@@ -7,6 +7,13 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-09-21
+
+### Fixed
+
+- Re-running the release workflow for a tag works. GoReleaser failed on every artifact the first run had already uploaded ("already_exists"), so a release whose Homebrew step failed could not be finished by a re-run; the v0.4.0 formula had to be pushed to the tap by hand. The release now replaces existing artifacts.
+- The Homebrew tap token was renewed; this release is the first to publish `nao1215/tap/jose` from CI since v0.0.8.
+
 ## [0.4.0] - 2026-09-21
 
 ### Added
@@ -192,7 +199,8 @@ defaults explicit, and adds a thorough test suite.
 Pre-review development releases (0.0.1 through 0.0.8). See the git history and
 the [release page](https://github.com/nao1215/jose/releases) for details.
 
-[Unreleased]: https://github.com/nao1215/jose/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/nao1215/jose/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/nao1215/jose/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/nao1215/jose/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/nao1215/jose/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/nao1215/jose/compare/v0.3.1...v0.3.2
