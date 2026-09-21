@@ -1,0 +1,26 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 64,
+  "commit": false,
+  "commitType": "docs",
+  "commitConvention": "angular",
+  "contributorsPerLine": 7,
+  "skipCi": true,
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "projectName": "jose",
+  "projectOwner": "nao1215",
+  "contributors": [
+    {
+      "login": "m-onyshchuk",
+      "name": "M.Onyshchuk",
+      "avatar_url": "https://avatars.githubusercontent.com/u/20461314?v=4",
+      "profile": "http://www.elza.ru/",
+      "contributions": [
+        "bug"
+      ]
+    }
+  ]
+}
