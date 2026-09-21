@@ -1,0 +1,764 @@
+# The recipes published on https://nao1215.github.io/jose/cookbook/ (the
+# committed doc/cookbook.md), run against the real binary so a command a reader
+# copies off the site cannot silently stop working.
+#
+# Every scenario name starts with the "## " section title it comes from,
+# followed by ": ". TestCookbook* in cmd/docs_test.go reads both files and
+# fails when a section has no scenario here, when a scenario names a section the
+# cookbook no longer has, or when a ```shell block of a section is not run,
+# character for character, as a `shell: true` command by one of its scenarios.
+# Steps that are not in the cookbook only prepare files a recipe reads.
+#
+# Unlike the other specs these run through a shell, because the recipes are
+# shell. run.sh points ATAGO_SHELL at Git Bash on Windows, so they run there
+# too. Commands use relative paths only: the shell starts in ${workdir}.
+version: "1"
+
+suite:
+  name: jose cookbook recipes
+
+scenarios:
+  # -------------------------------------------------------------- Generate a key
+  - name: "Generate a key: an EC P-256 private key to a file"
+    steps:
+      - run:
+          shell: true
+          command: jose jwk generate --type EC --curve P-256 --output ec.jwk
+      - assert:
+          exit_code: 0
+          stdout:
+            empty: true
+          file:
+            path: ec.jwk
+            json:
+              - path: "$.kty"
+                equals: EC
+              - path: "$.crv"
+                equals: P-256
+              - path: "$.d"
+                matches: "^[A-Za-z0-9_-]{43}$"
+
+  - name: "Generate a key: the other key types"
+    steps:
+      - run:
+          shell: true
+          command: |-
+            jose jwk generate --type RSA --size 3072 --output rsa.jwk
+            jose jwk generate --type OKP --curve Ed25519 --output ed25519.jwk
+            jose jwk generate --type oct --size 256 --output secret.jwk
+      - assert:
+          exit_code: 0
+          file:
+            path: rsa.jwk
+            json:
+              path: "$.kty"
+              equals: RSA
+      - assert:
+          file:
+            path: ed25519.jwk
+            json:
+              path: "$.crv"
+              equals: Ed25519
+      - assert:
+          file:
+            path: secret.jwk
+            json:
+              # 256 bits = 32 bytes = 43 unpadded base64url characters.
+              path: "$.k"
+              matches: "^[A-Za-z0-9_-]{43}$"
+
+  - name: "Generate a key: PEM, SEC 1 for EC"
+    steps:
+      - run:
+          shell: true
+          command: jose jwk generate --type EC --curve P-256 --output-format pem --output ec.pem
+      - assert:
+          exit_code: 0
+          file:
+            path: ec.pem
+            contains: "-----BEGIN EC PRIVATE KEY-----"
+
+  - name: "Generate a key: PEM, PKCS #8 for RSA and Ed25519"
+    steps:
+      - run:
+          command: jose jwk generate --type RSA --output-format pem --output rsa.pem
+      - run:
+          command: jose jwk generate --type OKP --curve Ed25519 --output-format pem --output ed25519.pem
+      - assert:
+          file:
+            path: rsa.pem
+            contains: "-----BEGIN PRIVATE KEY-----"
+      - assert:
+          file:
+            path: ed25519.pem
+            contains: "-----BEGIN PRIVATE KEY-----"
+
+  # Windows has no POSIX file modes to show.
+  - name: "Generate a key: the key file is readable by its owner only"
+    skip:
+      os: windows
+    steps:
+      - run:
+          shell: true
+          command: jose jwk generate --type EC --curve P-256 --output ec.jwk
+      - run:
+          shell: true
+          command: ls -l ec.jwk
+      - assert:
+          exit_code: 0
+          stdout:
+            matches: "^-rw-------"
+
+  # ---------------------------------------------- Label a key with kid, alg, and use
+  - name: "Label a key with kid, alg, and use: the labels land in the key"
+    steps:
+      - run:
+          shell: true
+          command: jose jwk generate --type EC --curve P-256 --kid key-1 --alg ES256 --use sig --output signing.jwk
+      - assert:
+          exit_code: 0
+          file:
+            path: signing.jwk
+            json:
+              - path: "$.kid"
+                equals: key-1
+              - path: "$.alg"
+                equals: ES256
+              - path: "$.use"
+                equals: sig
+              - path: "$.d"
+                matches: "."
+
+  - name: "Label a key with kid, alg, and use: sign copies the kid into the header"
+    steps:
+      - run:
+          shell: true
+          command: jose jwk generate --type EC --curve P-256 --kid key-1 --alg ES256 --use sig --output signing.jwk
+      - run:
+          shell: true
+          command: echo '{"sub":"alice"}' | jose jws sign --algorithm ES256 --key signing.jwk > token.jws
+      - run:
+          shell: true
+          command: jose jws parse --all token.jws
+      - assert:
+          exit_code: 0
+          stdout:
+            contains: '"kid": "key-1"'
+
+  - name: "Label a key with kid, alg, and use: a label the key cannot honor is refused"
+    steps:
+      - run:
+          shell: true
+          command: jose jwk generate --type EC --curve P-384 --alg ES256 --output wrong.jwk || echo "rejected"
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: rejected
+          stderr:
+            contains: "ES256 cannot be used with EC P-384"
+          file:
+            path: wrong.jwk
+            exists: false
+
+  - name: "Label a key with kid, alg, and use: --use enc with a signature algorithm is refused"
+    steps:
+      - run:
+          shell: true
+          command: jose jwk generate --type EC --curve P-256 --alg ES256 --use enc
+      - assert:
+          exit_code: 1
+          stdout:
+            empty: true
+          stderr:
+            contains: "--use does not match --alg"
+
+  # ------------------------------------------------------------ Get the public key
+  - name: "Get the public key: jwk public drops d and keeps the labels"
+    steps:
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --kid key-1 --alg ES256 --use sig --output signing.jwk
+      - run:
+          shell: true
+          command: jose jwk public signing.jwk > signing.pub.jwk
+      - assert:
+          exit_code: 0
+          file:
+            path: signing.pub.jwk
+            not_contains: '"d"'
+      - assert:
+          file:
+            path: signing.pub.jwk
+            json:
+              - path: "$.kid"
+                equals: key-1
+              - path: "$.alg"
+                equals: ES256
+              - path: "$.use"
+                equals: sig
+
+  - name: "Get the public key: --set wraps the key in a JWK Set"
+    steps:
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --kid key-1 --alg ES256 --use sig --output signing.jwk
+      - run:
+          shell: true
+          command: jose jwk public --set signing.jwk > jwks.json
+      - assert:
+          exit_code: 0
+          file:
+            path: jwks.json
+            json:
+              - path: "$.keys"
+                length: 1
+              - path: "$.keys[0].kid"
+                equals: key-1
+      - assert:
+          file:
+            path: jwks.json
+            not_contains: '"d"'
+
+  - name: "Get the public key: --public-key prints only the public half"
+    steps:
+      - run:
+          shell: true
+          command: jose jwk generate --type EC --curve P-256 --public-key
+      - assert:
+          exit_code: 0
+          stdout:
+            not_contains: '"d"'
+      - assert:
+          stdout:
+            json:
+              path: "$.kty"
+              equals: EC
+
+  - name: "Get the public key: an oct key is refused"
+    steps:
+      - run:
+          command: jose jwk generate --type oct --size 256 --output secret.jwk
+      - run:
+          command: jose jwk public secret.jwk
+      - assert:
+          exit_code: 1
+          stdout:
+            empty: true
+          stderr:
+            contains: "oct (symmetric) keys have no public key"
+
+  # ------------------------------------------------ Publish a JWKS and rotate keys
+  - name: "Publish a JWKS and rotate keys: first key, rotation, and retirement"
+    steps:
+      - run:
+          shell: true
+          command: |-
+            jose jwk generate --type EC --curve P-256 --kid key-1 --alg ES256 --use sig --output key-1.jwk
+            jose jwk public --set key-1.jwk > jwks.json
+      - assert:
+          exit_code: 0
+          file:
+            path: jwks.json
+            json:
+              - path: "$.keys"
+                length: 1
+              - path: "$.keys[0].kid"
+                equals: key-1
+      - run:
+          shell: true
+          command: |-
+            jose jwk generate --type EC --curve P-256 --kid key-2 --alg ES256 --use sig --output key-2.jwk
+            jose jwk public --set key-1.jwk key-2.jwk > jwks.json
+      - assert:
+          exit_code: 0
+          file:
+            path: jwks.json
+            json:
+              - path: "$.keys"
+                length: 2
+              - path: "$.keys[0].kid"
+                equals: key-1
+              - path: "$.keys[1].kid"
+                equals: key-2
+      - run:
+          shell: true
+          command: jose jwk public --set key-2.jwk > jwks.json
+      - assert:
+          exit_code: 0
+          file:
+            path: jwks.json
+            json:
+              - path: "$.keys"
+                length: 1
+              - path: "$.keys[0].kid"
+                equals: key-2
+
+  - name: "Publish a JWKS and rotate keys: a duplicate kid is refused"
+    steps:
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --kid key-1 --output a.jwk
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --kid key-1 --output b.jwk
+      - run:
+          command: jose jwk public --set a.jwk b.jwk
+      - assert:
+          exit_code: 1
+          stdout:
+            empty: true
+          stderr:
+            contains: "duplicate key ID (kid) across the input keys: key-1"
+
+  # ------------------------------------ atproto OAuth: keys for a confidential client
+  - name: "atproto OAuth: keys for a confidential client: key, JWKS, assertion, rotation"
+    steps:
+      - run:
+          shell: true
+          command: jose jwk generate --type EC --curve P-256 --alg ES256 --use sig --kid key-1 --output client-key-1.jwk
+      - assert:
+          exit_code: 0
+          file:
+            path: client-key-1.jwk
+            json:
+              - path: "$.crv"
+                equals: P-256
+              - path: "$.alg"
+                equals: ES256
+              - path: "$.kid"
+                equals: key-1
+      - run:
+          shell: true
+          command: jose jwk public --set client-key-1.jwk > jwks.json
+      - assert:
+          exit_code: 0
+          file:
+            path: jwks.json
+            json:
+              - path: "$.keys[0].kid"
+                equals: key-1
+              - path: "$.keys[0].alg"
+                equals: ES256
+      - assert:
+          file:
+            path: jwks.json
+            not_contains: '"d"'
+      # The key file must survive a round trip through an environment variable.
+      - run:
+          shell: true
+          command: |-
+            PRIVATE_KEY_1="$(cat client-key-1.jwk)"
+            export PRIVATE_KEY_1
+      - assert:
+          exit_code: 0
+      - run:
+          shell: true
+          command: |-
+            PRIVATE_KEY_1="$(cat client-key-1.jwk)"
+            export PRIVATE_KEY_1
+            printf '%s' "$PRIVATE_KEY_1" > from-env.jwk
+            echo '{}' | jose jws sign --algorithm ES256 --key from-env.jwk
+      - assert:
+          exit_code: 0
+      - run:
+          shell: true
+          command: |-
+            client_id="https://app.example.com/oauth/client-metadata.json"
+            issuer="https://bsky.social"
+            now=$(date +%s)
+            printf '{"iss":"%s","sub":"%s","aud":"%s","jti":"%s","iat":%s,"exp":%s}' \
+              "$client_id" "$client_id" "$issuer" "$(openssl rand -hex 16)" "$now" "$((now + 60))" |
+              jose jws sign --algorithm ES256 --key client-key-1.jwk --header '{"typ":"JWT"}' > client-assertion.jwt
+      - assert:
+          exit_code: 0
+      - run:
+          command: jose jws parse --all client-assertion.jwt
+      - assert:
+          stdout:
+            contains:
+              - '"alg": "ES256"'
+              - '"kid": "key-1"'
+              - '"typ": "JWT"'
+      - run:
+          shell: true
+          command: jose jws verify --match-kid --key jwks.json client-assertion.jwt
+      - assert:
+          exit_code: 0
+          stdout:
+            json:
+              - path: "$.iss"
+                equals: https://app.example.com/oauth/client-metadata.json
+              - path: "$.sub"
+                equals: https://app.example.com/oauth/client-metadata.json
+              - path: "$.aud"
+                equals: https://bsky.social
+              - path: "$.jti"
+                matches: "^[0-9a-f]{32}$"
+              - path: "$.iat"
+                gt: 1700000000
+      - run:
+          shell: true
+          command: |-
+            jose jwk generate --type EC --curve P-256 --alg ES256 --use sig --kid key-2 --output client-key-2.jwk
+            jose jwk public --set client-key-1.jwk client-key-2.jwk > jwks.json
+      - assert:
+          exit_code: 0
+          file:
+            path: jwks.json
+            json:
+              - path: "$.keys"
+                length: 2
+              - path: "$.keys[1].kid"
+                equals: key-2
+      # The assertion signed with key-1 still verifies against the rotated set.
+      - run:
+          command: jose jws verify --match-kid --key jwks.json client-assertion.jwt
+      - assert:
+          exit_code: 0
+
+  # ---------------------------------------------------- Build a DPoP proof by hand
+  - name: "Build a DPoP proof by hand: the header carries the public key only"
+    steps:
+      - run:
+          shell: true
+          command: jose jwk generate --type EC --curve P-256 --alg ES256 --output dpop.jwk
+      - run:
+          shell: true
+          command: |-
+            now=$(date +%s)
+            printf '{"jti":"%s","htm":"POST","htu":"%s","iat":%s}' \
+              "$(openssl rand -hex 16)" "https://bsky.social/oauth/par" "$now" |
+              jose jws sign --algorithm ES256 --key dpop.jwk \
+                --header "{\"typ\":\"dpop+jwt\",\"jwk\":$(jose jwk public dpop.jwk)}" > dpop.jwt
+      - assert:
+          exit_code: 0
+      - run:
+          shell: true
+          command: jose jws parse --all dpop.jwt
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - '"typ": "dpop+jwt"'
+              - '"jwk": {'
+              - '"htm":"POST"'
+              - '"htu":"https://bsky.social/oauth/par"'
+            not_contains: '"d":'
+      # The public key in the header verifies the proof, as a server would.
+      - run:
+          command: jose jws verify --algorithm ES256 --key dpop.jwk dpop.jwt
+      - assert:
+          exit_code: 0
+
+  # --------------------------------------------------------- Sign and verify a JWT
+  - name: "Sign and verify a JWT: sign, verify by algorithm and by kid, reject another key"
+    steps:
+      - run:
+          shell: true
+          command: |-
+            jose jwk generate --type EC --curve P-256 --kid api-1 --alg ES256 --output api.jwk
+            jose jwk public --set api.jwk > jwks.json
+      - assert:
+          exit_code: 0
+      - run:
+          shell: true
+          command: |-
+            printf '{"sub":"alice","iat":%s}' "$(date +%s)" |
+              jose jws sign --algorithm ES256 --key api.jwk --header '{"typ":"JWT"}' > token.jwt
+      - assert:
+          exit_code: 0
+      - run:
+          shell: true
+          command: jose jws verify --algorithm ES256 --key jwks.json token.jwt
+      - assert:
+          exit_code: 0
+          stdout:
+            json:
+              path: "$.sub"
+              equals: alice
+      - run:
+          shell: true
+          command: jose jws verify --match-kid --key jwks.json token.jwt
+      - assert:
+          exit_code: 0
+          stdout:
+            json:
+              path: "$.sub"
+              equals: alice
+      - run:
+          shell: true
+          command: |-
+            jose jwk generate --type EC --curve P-256 --kid other --alg ES256 --output other.jwk
+            jose jwk public --set other.jwk > other-jwks.json
+            jose jws verify --algorithm ES256 --key other-jwks.json token.jwt || echo "not trusted"
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: not trusted
+          stderr:
+            contains: "failed to verify jws message"
+
+  # ------------------------------------------------ Inspect a token without verifying it
+  - name: "Inspect a token without verifying it: parse, --all, and an inline token"
+    steps:
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --kid api-1 --alg ES256 --output api.jwk
+      - run:
+          shell: true
+          command: echo '{"sub":"alice"}' | jose jws sign --algorithm ES256 --key api.jwk --header '{"typ":"JWT"}' > token.jwt
+      - run:
+          shell: true
+          command: jose jws parse token.jwt
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: '{"sub":"alice"}'
+      - run:
+          shell: true
+          command: jose jws parse --all token.jwt
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - '"alg": "ES256"'
+              - '"kid": "api-1"'
+              - '"typ": "JWT"'
+      - run:
+          shell: true
+          command: |-
+            token=$(cat token.jwt)
+            jose jws parse "$token"
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: '{"sub":"alice"}'
+
+  # ---------------------------------------------- Sign with a shared secret (HMAC)
+  - name: "Sign with a shared secret (HMAC): HS256 round trip"
+    steps:
+      - run:
+          shell: true
+          command: |-
+            jose jwk generate --type oct --size 256 --kid shared-1 --alg HS256 --output hmac.jwk
+            echo '{"sub":"alice"}' | jose jws sign --algorithm HS256 --key hmac.jwk > hmac.jws
+            jose jws verify --algorithm HS256 --key hmac.jwk hmac.jws
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: '{"sub":"alice"}'
+
+  - name: "Sign with a shared secret (HMAC): HS512 on a 256-bit key is refused"
+    steps:
+      - run:
+          command: jose jwk generate --type oct --size 256 --alg HS512
+      - assert:
+          exit_code: 1
+          stderr:
+            contains: "HS512 cannot be used with oct"
+      - run:
+          command: jose jwk generate --type oct --size 512 --alg HS512
+      - assert:
+          exit_code: 0
+
+  # ------------------------------------------------ Encrypt for someone's public key
+  - name: "Encrypt for someone's public key: ECDH-ES+A256KW round trip"
+    steps:
+      - run:
+          shell: true
+          command: |-
+            jose jwk generate --type EC --curve P-256 --alg ECDH-ES+A256KW --use enc --output recipient.jwk
+            jose jwk public recipient.jwk > recipient.pub.jwk
+      - assert:
+          exit_code: 0
+          file:
+            path: recipient.pub.jwk
+            not_contains: '"d"'
+      - run:
+          shell: true
+          command: |-
+            echo 'meet at noon' | jose jwe encrypt --key recipient.pub.jwk \
+              --key-encryption ECDH-ES+A256KW --content-encryption A256GCM > message.jwe
+      - assert:
+          exit_code: 0
+      - run:
+          shell: true
+          command: jose jwe decrypt --key recipient.jwk message.jwe
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: meet at noon
+      # The public key alone cannot open it.
+      - run:
+          command: jose jwe decrypt --key recipient.pub.jwk message.jwe
+      - assert:
+          exit_code: 1
+
+  - name: "Encrypt for someone's public key: RSA-OAEP-256 round trip"
+    steps:
+      - run:
+          shell: true
+          command: |-
+            jose jwk generate --type RSA --size 3072 --alg RSA-OAEP-256 --use enc --output rsa-recipient.jwk
+            jose jwk public rsa-recipient.jwk > rsa-recipient.pub.jwk
+            echo 'meet at noon' | jose jwe encrypt --key rsa-recipient.pub.jwk \
+              --key-encryption RSA-OAEP-256 --content-encryption A256GCM > rsa-message.jwe
+            jose jwe decrypt --key rsa-recipient.jwk rsa-message.jwe
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: meet at noon
+
+  # ------------------------------------------------------- Encrypt with a shared key
+  - name: "Encrypt with a shared key: A256KW with compression"
+    steps:
+      - run:
+          shell: true
+          command: |-
+            jose jwk generate --type oct --size 256 --alg A256KW --use enc --output aes.jwk
+            echo 'meet at noon' | jose jwe encrypt --key aes.jwk \
+              --key-encryption A256KW --content-encryption A256GCM --compress > shared.jwe
+            jose jwe decrypt --key aes.jwk shared.jwe
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: meet at noon
+
+  # --------------------------------------------------------- Use PEM keys from openssl
+  - name: "Use PEM keys from openssl: sign and verify with an openssl RSA key"
+    steps:
+      - run:
+          shell: true
+          command: |-
+            openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out rsa.pem
+            echo '{"sub":"alice"}' | jose jws sign --algorithm RS256 --key-format pem --key rsa.pem > rsa.jws
+            jose jws verify --algorithm RS256 --key-format pem --key rsa.pem rsa.jws
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: '{"sub":"alice"}'
+
+  - name: "Use PEM keys from openssl: publish an openssl EC key with a kid"
+    steps:
+      - run:
+          shell: true
+          command: |-
+            openssl ecparam -name prime256v1 -genkey -noout -out ec-openssl.pem
+            jose jwk public --key-format pem --kid key-1 --alg ES256 --use sig --set ec-openssl.pem > jwks.json
+      - assert:
+          exit_code: 0
+          file:
+            path: jwks.json
+            json:
+              - path: "$.keys[0].kid"
+                equals: key-1
+              - path: "$.keys[0].alg"
+                equals: ES256
+              - path: "$.keys[0].crv"
+                equals: P-256
+      - assert:
+          file:
+            path: jwks.json
+            not_contains: '"d"'
+      - run:
+          shell: true
+          command: |-
+            echo '{"sub":"alice"}' | jose jws sign --algorithm ES256 --key-format pem --key ec-openssl.pem \
+              --header '{"kid":"key-1"}' > ec-openssl.jws
+            jose jws verify --match-kid --key jwks.json ec-openssl.jws
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: '{"sub":"alice"}'
+
+  # -------------------------------------------------------- Pick an algorithm for a key
+  - name: "Pick an algorithm for a key: jwa lists the names the table uses"
+    steps:
+      - run:
+          shell: true
+          command: |-
+            jose jwa --signature
+            jose jwa --key-encryption
+            jose jwa --content-encryption
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - ES256
+              - EdDSA
+              - HS512
+              - PS256
+              - ECDH-ES+A256KW
+              - RSA-OAEP-256
+              - A256KW
+              - PBES2-HS256+A128KW
+              - dir
+              - A256GCM
+              - A128CBC-HS256
+
+  # ------------------------------------------------------------------- Script it
+  - name: "Script it: verification is a plain if"
+    steps:
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --kid api-1 --alg ES256 --output api.jwk
+      - run:
+          shell: true
+          command: jose jwk public --set api.jwk > jwks.json
+      - run:
+          shell: true
+          command: echo '{"sub":"alice"}' | jose jws sign --algorithm ES256 --key api.jwk > token.jwt
+      - run:
+          shell: true
+          command: |-
+            if jose jws verify --algorithm ES256 --key jwks.json token.jwt > /dev/null; then
+              echo "valid"
+            else
+              echo "invalid"
+            fi
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: valid
+      # A tampered token takes the else branch.
+      - run:
+          shell: true
+          command: echo 'not-a-token' > token.jwt
+      - run:
+          shell: true
+          command: |-
+            if jose jws verify --algorithm ES256 --key jwks.json token.jwt > /dev/null; then
+              echo "valid"
+            else
+              echo "invalid"
+            fi
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: invalid
+
+  - name: "Script it: pipes and --output"
+    steps:
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --kid api-1 --alg ES256 --output api.jwk
+      - run:
+          shell: true
+          command: jose jwk public --set api.jwk > jwks.json
+      - run:
+          shell: true
+          command: echo '{"sub":"alice"}' | jose jws sign --algorithm ES256 --key api.jwk > token.jwt
+      - run:
+          shell: true
+          command: cat token.jwt | jose jws verify --algorithm ES256 --key jwks.json
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: '{"sub":"alice"}'
+      - run:
+          shell: true
+          command: |-
+            jose jws verify --algorithm ES256 --key jwks.json token.jwt --output claims.json
+            cat claims.json
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: '{"sub":"alice"}'
+          file:
+            path: claims.json
+            json:
+              path: "$.sub"
+              equals: alice

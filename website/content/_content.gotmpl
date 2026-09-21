@@ -1,0 +1,21 @@
+{{/* Build the cookbook page from doc/cookbook.md, committed in this repository
+     and mounted under assets/. The committed file stays the single source of
+     truth (the atago suite runs its shell blocks); this template only strips
+     the H1 (the layout renders the title) and rewrites repository-relative
+     links to GitHub. */}}
+
+{{ $gh := "https://github.com/nao1215/jose/blob/main/" }}
+
+{{ with resources.Get "doc/cookbook.md" }}
+  {{ $md := .Content }}
+  {{ $md = replaceRE `\A# Cookbook\n` "" $md }}
+  {{ $md = replaceRE `\]\(\.\./` (printf "](%s" $gh) $md }}
+  {{ $.AddPage (dict
+      "path" "cookbook"
+      "title" "Cookbook"
+      "params" (dict
+        "description" "Copyable jose recipes indexed by task: generate and label keys, publish and rotate a JWKS, set up an atproto OAuth confidential client, sign and verify JWTs, encrypt with JWE, and use openssl PEM keys."
+        "toc" true
+        "filter" true)
+      "content" (dict "mediaType" "text/markdown" "value" $md)) }}
+{{ end }}

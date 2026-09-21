@@ -12,211 +12,86 @@
 # jose
 
 jose is a command line tool for JSON Object Signing and Encryption (JOSE). It
-generates keys (JWK), signs and verifies messages (JWS), and encrypts and
-decrypts messages (JWE) from the shell, so you can work with JOSE without
-writing a program. It is built on [github.com/lestrrat-go/jwx](https://github.com/lestrrat-go/jwx)
-(MIT license, by lestrrat).
+generates keys (JWK), publishes key sets (JWKS), signs and verifies messages
+(JWS), and encrypts and decrypts messages (JWE) from the shell, so you can work
+with JOSE without writing a program. It is built on
+[github.com/lestrrat-go/jwx](https://github.com/lestrrat-go/jwx) (MIT license,
+by lestrrat).
+
+Documentation: https://nao1215.github.io/jose/ ([cookbook](https://nao1215.github.io/jose/cookbook/), [reference](https://nao1215.github.io/jose/reference/))
 
 ![demo](./doc/img/demo.gif)
 
 ## Install
 
-Use `go install` (Go 1.26 or later):
+```shell
+brew install nao1215/tap/jose
+```
+
+Or build from source with Go 1.26 or later. jwx v4 uses `encoding/json/v2`,
+which Go 1.26 still keeps behind `GOEXPERIMENT=jsonv2`:
 
 ```shell
 GOEXPERIMENT=jsonv2 go install github.com/nao1215/jose@latest
 ```
 
-jose depends on jwx v4, which uses `encoding/json/v2`. On Go 1.26 that package
-is still gated behind `GOEXPERIMENT=jsonv2`, so the experiment must be set when
-building from source. The prebuilt binaries and packages below need no such
-flag.
-
-Use Homebrew:
-
-```shell
-brew install nao1215/tap/jose
-```
-
-You can also download a prebuilt package (.deb, .rpm, .apk) or binary from the
-[release page](https://github.com/nao1215/jose/releases).
-
-Tested on Linux (the main target), macOS, and Windows.
+Prebuilt binaries and .deb/.rpm/.apk packages are on the
+[release page](https://github.com/nao1215/jose/releases). jose is tested on
+Linux (the main target), macOS, and Windows.
 
 ## Quick start
 
 Generate a key, sign a payload, and verify it back:
 
 ```shell
-$ jose jwk generate --type EC --curve P-256 --output ec.jwk
-$ echo '{"sub":"alice"}' > payload.json
-$ jose jws sign --algorithm ES256 --key ec.jwk payload.json > token.jws
-$ jose jws verify --algorithm ES256 --key ec.jwk token.jws
-{"sub":"alice"}
+jose jwk generate --type EC --curve P-256 --output ec.jwk
+echo '{"sub":"alice"}' | jose jws sign --algorithm ES256 --key ec.jwk > token.jws
+jose jws verify --algorithm ES256 --key ec.jwk token.jws
 ```
 
-## Input: files, stdin, pipes, and inline tokens
-
-Every command that takes input accepts it in three ways. You can pass a file
-path. You can pass `-` to read standard input. You can also pipe data in
-without any argument, so the command reads standard input when it is not a
-terminal:
-
-```shell
-$ echo '{"sub":"alice"}' | jose jws sign --algorithm ES256 --key ec.jwk
-$ cat token.jws | jose jws verify --algorithm ES256 --key ec.jwk
-```
-
-In addition, `jws parse` and `jws verify` accept a compact JWS token directly as
-the argument:
-
-```shell
-$ jose jws verify --algorithm ES256 --key ec.jwk "$(cat token.jws)"
-```
-
-jose decides this by shape. A value with the three dot-separated segments of a
-compact JWS is treated as a token; anything else is treated as a file path, so a
-mistyped file name reports "failed to open file" rather than a parse error.
+Every command reads a pipe too, and `jws parse` and `jws verify` take a token
+inline:
 
 ![pipe](./doc/img/pipe.gif)
 
-## Generate keys: jose jwk generate
-
-`jose jwk generate` writes a private JWK to standard output, or to a file with
-`--output`.
+Make an ES256 key with a key ID, and print the JWKS a verifier would fetch:
 
 ```shell
-$ jose jwk generate --type RSA --size 2048
-$ jose jwk generate --type EC --curve P-256 --output-format pem
-$ jose jwk generate --type OKP --curve Ed25519
-$ jose jwk generate --type oct --size 256
-$ jose jwk generate --type EC --curve P-256 --public-key
+jose jwk generate --type EC --curve P-256 --kid key-1 --alg ES256 --use sig --output key.jwk
+jose jwk public --set key.jwk
 ```
 
-Flags:
+Those two commands are also what a Bluesky / AT Protocol OAuth confidential
+client needs for `private_key_jwt`. The cookbook recipe
+[atproto OAuth: keys for a confidential client](https://nao1215.github.io/jose/cookbook/#atproto-oauth-keys-for-a-confidential-client)
+covers the client metadata, a hand-signed client assertion, and key rotation.
 
-- `--type` (`-t`): RSA, EC, OKP, or oct. Required.
-- `--curve` (`-c`): the elliptic curve. Required for EC and OKP. EC supports
-  P-256, P-384, and P-521. OKP supports Ed25519 and X25519.
-- `--size` (`-s`): key size in bits. Used by RSA (for example 2048 or 4096) and
-  oct (for example 256, which produces a 32 byte secret). It must be a multiple
-  of 8 and at least 256. EC and OKP ignore it. The default is 2048.
-- `--output-format` (`-O`): json (default) or pem. PEM is available for RSA, EC,
-  and OKP Ed25519 keys. oct keys (a raw symmetric secret) and OKP X25519 keys
-  have no usable X.509 PEM encoding here, so they are JSON only and asking for
-  PEM is rejected.
-- `--output` (`-o`): output file, or `-` for standard output (default).
-- `--public-key` (`-p`): emit the public key instead of the private key. oct
-  keys are symmetric and have no public half, so this is rejected for oct.
+## What jose does
 
-## Sign and verify: jose jws
+| You want to | Run |
+|:--|:--|
+| Generate an RSA, EC, OKP, or oct key, optionally with `kid`, `alg`, and `use` | `jose jwk generate` |
+| Turn private keys (JWK or PEM) into a publishable JWKS | `jose jwk public` |
+| Sign a payload or a JWT | `jose jws sign` |
+| Verify against a key or a JWKS, by algorithm or by `kid` | `jose jws verify` |
+| Decode a token without a key | `jose jws parse` |
+| Encrypt and decrypt | `jose jwe encrypt`, `jose jwe decrypt` |
+| List the algorithm names jose accepts | `jose jwa` |
 
-Sign a payload into a compact JWS:
+Every command reads a file, `-`, or a pipe, and writes to standard output or
+`--output`; errors go to standard error with exit status 1. The
+[reference](https://nao1215.github.io/jose/reference/) lists every flag.
 
-```shell
-$ jose jws sign --algorithm ES256 --key ec.jwk payload.json > token.jws
-```
-
-`--algorithm` is required; jose does not pick one for you. Choose it to match
-the key (ES256/ES384/ES512 for EC, RS256/PS256 and the like for RSA, EdDSA for
-OKP, HS256/HS384/HS512 for oct). Use `--header` to inject extra protected header
-fields, for example `--header '{"kid":"my-key"}'`.
-
-Verify a JWS and print the payload:
-
-```shell
-$ jose jws verify --algorithm ES256 --key ec.jwk token.jws
-{"sub":"alice"}
-```
-
-You must provide the algorithm to use, because trusting the `alg` field of the
-message itself is unsafe (see [this write-up](https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/)).
-The `--key` file can hold a single JWK or a JWK set; jose tries every key in the
-set and succeeds if any one of them verifies the signature. A private JWK works
-too: jose derives the public key from it.
-
-As an alternative, `--match-kid` verifies only against the key whose key ID
-(`kid`) matches the one named in the message. The matching key must carry both
-`alg` and `kid`.
-
-Parse a JWS without verifying it:
-
-```shell
-$ jose jws parse token.jws            # print the payload
-$ jose jws parse --all token.jws      # print payload, headers, and signature
-$ jose jws parse "$(cat token.jws)"   # pass the token as an argument
-```
-
-## Encrypt and decrypt: jose jwe
-
-Encrypt a payload into a compact JWE, then decrypt it:
-
-```shell
-$ jose jwe encrypt --key ec.jwk --key-encryption ECDH-ES \
-    --content-encryption A256GCM payload.json > secret.jwe
-$ jose jwe decrypt --key ec.jwk secret.jwe
-{"sub":"alice"}
-```
-
-Flags for `encrypt`:
-
-- `--key-encryption` (`-K`): how the content key is wrapped, for example
-  RSA-OAEP for RSA keys or ECDH-ES for EC keys.
-- `--content-encryption` (`-c`): how the payload is encrypted, one of
-  A128CBC-HS256, A128GCM, A192CBC-HS384, A192GCM, A256CBC-HS512, A256GCM.
-- `--compress` (`-z`): deflate the payload before encrypting.
-- `--key-format` (`-F`): json (default) or pem.
-
-`decrypt` reuses `--key`, `--key-encryption`, and `--key-format`. When
-`--key-encryption` is omitted, jose reads the algorithm from the message header.
-
-## List algorithms: jose jwa
-
-`jose jwa` prints the algorithm names jose accepts, so you can copy a value
-straight into the flags above and have it work.
-
-```shell
-$ jose jwa --key-type            # RSA, EC, OKP, oct
-$ jose jwa --elliptic-curve      # curve names
-$ jose jwa --signature           # JWS signature algorithms
-$ jose jwa --key-encryption      # JWE key encryption algorithms
-$ jose jwa --content-encryption  # JWE content encryption algorithms
-```
-
-The underlying jwx library advertises some names jose does not support, such as
-the X448 curve, the none signature, and the RSA-OAEP-384 key encryption. Those
-are filtered out, so every value printed here is one jose can actually use.
-
-## Helper commands
-
-Shell completion is written to standard output; jose never edits your shell
-configuration. Redirect it to wherever your shell loads completions from:
-
-```shell
-$ jose completion bash > /etc/bash_completion.d/jose
-$ jose completion zsh  > "${fpath[1]}/_jose"
-$ jose completion fish > ~/.config/fish/completions/jose.fish
-```
-
-Other commands:
-
-- `jose version` (or `jose --version` / `jose -v`): print the version.
-- `jose man`: install man pages under /usr/share/man/man1 (needs root).
-- `jose bug-report`: open a pre-filled GitHub issue in your browser, including
-  your jose version and runtime information.
-
-## Limitations
-
-- jose generates OKP keys for Ed25519 and X25519 only. Ed448 and X448 are not
-  supported.
-- `jws sign` and `jws verify` work in single key mode.
+The shell blocks in this README, on the website, and in the cookbook are run
+word for word by the end-to-end suite ([atago](https://github.com/nao1215/atago)
+specs under `e2e/atago/`), and `cmd/docs_test.go` fails when a block is not.
 
 ## Contributing
 
 Contributions are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the
 development setup and the local commands that mirror CI (`make test`,
-`make test-e2e`, `make test-fuzz`, `make lint`). Security reports are described
-in [SECURITY.md](./SECURITY.md), and notable changes are tracked in
+`make e2e`, `make test-fuzz`, `make lint`, `make website`). Security reports are
+described in [SECURITY.md](./SECURITY.md), and notable changes are tracked in
 [CHANGELOG.md](./CHANGELOG.md).
 
 A GitHub Star motivates continued development.

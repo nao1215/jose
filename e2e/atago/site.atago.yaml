@@ -1,0 +1,261 @@
+# The shell blocks and the behavior claims of README.md and the website pages
+# other than the cookbook (website/content/_index.md and reference.md). TestSite* in
+# cmd/docs_test.go fails when a shell block on those pages is not run here,
+# character for character, as a `shell: true` command. The install page is
+# left out on purpose: its commands install software on the host.
+version: "1"
+
+suite:
+  name: jose website pages
+
+scenarios:
+  # --------------------------------------------------------------------- README
+  - name: "README: the quick start signs and verifies"
+    steps:
+      - run:
+          shell: true
+          command: |-
+            jose jwk generate --type EC --curve P-256 --output ec.jwk
+            echo '{"sub":"alice"}' | jose jws sign --algorithm ES256 --key ec.jwk > token.jws
+            jose jws verify --algorithm ES256 --key ec.jwk token.jws
+      - assert:
+          exit_code: 0
+          stdout:
+            json:
+              path: "$.sub"
+              equals: alice
+
+  # ------------------------------------------------------------------ home page
+  - name: "home: the 30-second example prints a one-key public JWKS"
+    steps:
+      - run:
+          shell: true
+          command: |-
+            jose jwk generate --type EC --curve P-256 --kid key-1 --alg ES256 --use sig --output key.jwk
+            jose jwk public --set key.jwk
+      - assert:
+          exit_code: 0
+          stdout:
+            json:
+              - path: "$.keys"
+                length: 1
+              - path: "$.keys[0].kid"
+                equals: key-1
+              - path: "$.keys[0].alg"
+                equals: ES256
+              - path: "$.keys[0].use"
+                equals: sig
+              - path: "$.keys[0].crv"
+                equals: P-256
+      - assert:
+          stdout:
+            not_contains: '"d"'
+          file:
+            path: key.jwk
+            json:
+              path: "$.d"
+              matches: "."
+
+  # ------------------------------------------------------------- reference page
+  - name: "reference: the jwk generate example"
+    steps:
+      - run:
+          shell: true
+          command: jose jwk generate --type EC --curve P-256 --kid key-1 --alg ES256 --use sig --output key.jwk
+      - assert:
+          exit_code: 0
+          file:
+            path: key.jwk
+            json:
+              path: "$.kid"
+              equals: key-1
+
+  - name: "reference: the jwk public example"
+    steps:
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --kid key-1 --alg ES256 --use sig --output key.jwk
+      - run:
+          shell: true
+          command: jose jwk public --set key.jwk
+      - assert:
+          exit_code: 0
+          stdout:
+            json:
+              path: "$.keys[0].kid"
+              equals: key-1
+
+  - name: "reference: the jws parse example"
+    steps:
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --kid key-1 --alg ES256 --use sig --output key.jwk
+      - run:
+          shell: true
+          command: |-
+            echo '{"sub":"alice"}' | jose jws sign --algorithm ES256 --key key.jwk > token.jws
+            jose jws parse --all token.jws
+      - assert:
+          exit_code: 0
+          stdout:
+            contains:
+              - 'Payload: {"sub":"alice"}'
+              - '"kid": "key-1"'
+
+  - name: "reference: the jwa example"
+    steps:
+      - run:
+          shell: true
+          command: jose jwa --signature
+      - assert:
+          exit_code: 0
+          stdout:
+            contains: ES256
+            not_contains: none
+
+  - name: "reference: jwa leaves out names jose cannot use"
+    steps:
+      - run:
+          command: jose jwa --elliptic-curve
+      - assert:
+          exit_code: 0
+          stdout:
+            not_contains: X448
+      - run:
+          command: jose jwa --key-encryption
+      - assert:
+          exit_code: 0
+          stdout:
+            not_contains: RSA-OAEP-384
+
+  - name: "reference: --key-format pem reads PKCS #1 and public key PEM"
+    steps:
+      - fixture:
+          file: payload.json
+          content: '{"sub":"alice"}'
+      - run:
+          shell: true
+          command: openssl genrsa -traditional -out rsa1.pem 2048 || openssl genrsa -out rsa1.pem 2048
+      - assert:
+          exit_code: 0
+          file:
+            path: rsa1.pem
+            contains: "-----BEGIN RSA PRIVATE KEY-----"
+      - run:
+          command: jose jws sign --algorithm RS256 --key-format pem --key rsa1.pem --output token.jws payload.json
+      - assert:
+          exit_code: 0
+      - run:
+          command: openssl rsa -in rsa1.pem -pubout -out rsa1.pub.pem
+      - run:
+          command: jose jws verify --algorithm RS256 --key-format pem --key rsa1.pub.pem token.jws
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: '{"sub":"alice"}'
+
+  - name: "reference: --match-kid verifies without --algorithm"
+    steps:
+      - fixture:
+          file: payload.json
+          content: '{"sub":"alice"}'
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --kid key-1 --alg ES256 --output key.jwk
+      - run:
+          command: jose jws sign --algorithm ES256 --key key.jwk --output token.jws payload.json
+      - run:
+          command: jose jws verify --match-kid --key key.jwk token.jws
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: '{"sub":"alice"}'
+
+  - name: "reference: --match-kid needs alg on the key"
+    steps:
+      - fixture:
+          file: payload.json
+          content: '{"sub":"alice"}'
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --kid key-1 --output key.jwk
+      - run:
+          command: jose jws sign --algorithm ES256 --key key.jwk --output token.jws payload.json
+      - run:
+          command: jose jws verify --match-kid --key key.jwk token.jws
+      - assert:
+          exit_code: 1
+
+  - name: "reference: --output-format pem refuses the labels"
+    steps:
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --output-format pem --kid key-1
+      - assert:
+          exit_code: 1
+          stdout:
+            empty: true
+          stderr:
+            contains: "PEM cannot carry them"
+
+  - name: "reference: jwk public labels need exactly one input key"
+    steps:
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --output a.jwk
+      - run:
+          command: jose jwk generate --type EC --curve P-256 --output b.jwk
+      - run:
+          command: jose jwk public --kid key-1 a.jwk b.jwk
+      - assert:
+          exit_code: 1
+          stderr:
+            contains: "need exactly one input key"
+
+  - name: "reference: jwk public reads a private key from a pipe"
+    steps:
+      - run:
+          command: jose jwk generate --type OKP --curve Ed25519 --kid ed-1 --alg EdDSA --output ed.jwk
+      - run:
+          command: jose jwk public
+          stdin:
+            file: ed.jwk
+      - assert:
+          exit_code: 0
+          stdout:
+            json:
+              - path: "$.kid"
+                equals: ed-1
+              - path: "$.alg"
+                equals: EdDSA
+      - assert:
+          stdout:
+            not_contains: '"d"'
+
+  - name: "reference: sign copies the kid of the key into the header"
+    steps:
+      - fixture:
+          file: payload.json
+          content: '{"sub":"alice"}'
+      - run:
+          command: jose jwk generate --type oct --size 256 --kid s-1 --alg HS256 --output hmac.jwk
+      - run:
+          command: jose jws sign --algorithm HS256 --key hmac.jwk --output token.jws payload.json
+      - run:
+          command: jose jws parse --all token.jws
+      - assert:
+          exit_code: 0
+          stdout:
+            contains: '"kid": "s-1"'
+
+  - name: "reference: jwe decrypt reads the key encryption from the header"
+    steps:
+      - fixture:
+          file: payload.json
+          content: '{"sub":"alice"}'
+      - run:
+          command: jose jwk generate --type RSA --alg RSA-OAEP-256 --use enc --output rsa.jwk
+      - run:
+          command: jose jwk public --output rsa.pub.jwk rsa.jwk
+      - run:
+          command: jose jwe encrypt --key rsa.pub.jwk --key-encryption RSA-OAEP-256 --content-encryption A128CBC-HS256 --output m.jwe payload.json
+      - run:
+          command: jose jwe decrypt --key rsa.jwk m.jwe
+      - assert:
+          exit_code: 0
+          stdout:
+            equals: '{"sub":"alice"}'
