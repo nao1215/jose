@@ -110,6 +110,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
   <tbody>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="http://www.elza.ru/"><img src="https://avatars.githubusercontent.com/u/20461314?v=4?s=64" width="64px;" alt="M.Onyshchuk"/><br /><sub><b>M.Onyshchuk</b></sub></a><br /><a href="https://github.com/nao1215/jose/issues?q=author%3Am-onyshchuk" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://debimate.jp/"><img src="https://avatars.githubusercontent.com/u/22737008?v=4?s=64" width="64px;" alt="CHIKAMATSU Naohiro"/><br /><sub><b>CHIKAMATSU Naohiro</b></sub></a><br /><a href="https://github.com/nao1215/jose/commits?author=nao1215" title="Code">💻</a> <a href="https://github.com/nao1215/jose/commits?author=nao1215" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>
