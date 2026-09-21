@@ -7,6 +7,22 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ## [Unreleased]
 
+### Added
+
+- A documentation website at https://nao1215.github.io/jose/, built with Hugo and published to GitHub Pages: a home page, an install page, a reference of every command and flag, and a cookbook. The cookbook is `doc/cookbook.md`, mounted into the site, and covers generating and labeling keys, publishing and rotating a JWKS, the keys of an atproto (Bluesky) OAuth confidential client, a DPoP proof by hand, JWT signing and verification, HMAC, JWE with public and shared keys, openssl PEM keys, choosing an algorithm, and scripting.
+- `jose jwk generate --kid`, `--alg`, and `--use` record the key ID, the algorithm, and the public key use in the generated key, and `--set` writes a JWK Set (`{"keys":[...]}`) even for one key. `--alg` is checked against the key under RFC 7518: ES256 needs P-256, ES384 P-384, ES512 P-521, EdDSA Ed25519, an HMAC key must be at least as long as its hash, and AES key wrap needs a key of exactly its size. `--use` must agree with `--alg`. Before this, a key could not carry a `kid` or `alg` without editing the JSON by hand, although `jws verify --match-kid` requires both.
+- `jose jwk public` reads private keys (JWK, JWK Set, or PEM) from files or standard input and writes their public halves, keeping `kid`, `alg`, and `use`. Several files merge into one set for key rotation, and a repeated `kid` is rejected. `--kid`, `--alg`, and `--use` label a single key that has none, such as one made by openssl.
+- Homebrew: releases now update the `nao1215/tap/jose` formula. The `brews` section was missing from the GoReleaser configuration, so the tap had stayed at v0.0.8.
+
+### Fixed
+
+- `jose jwk generate --help` printed "(default 2048)" twice for `--size`, and described `--output-format` as RSA/EC only although Ed25519 keys have PEM output too.
+
+### Tests
+
+- Every shell block in the cookbook, the website pages, and the README is run word for word by the atago suite (`e2e/atago/cookbook.atago.yaml` and `site.atago.yaml`), and `cmd/docs_test.go` fails when a block is not, when a cookbook section has no scenario, when a JSON example does not parse, when the algorithm table disagrees with what `--alg` accepts, or when the reference page misses a flag of the command it documents. On Windows the recipes run under Git Bash.
+- A differential test checks that every algorithm and key pairing `--alg` accepts is one jwx can actually sign or encrypt with.
+
 ## [0.3.3] - 2026-09-21
 
 ### Changed

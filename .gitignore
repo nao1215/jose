@@ -20,3 +20,13 @@ dist
 # `make coverage` scratch: raw covdata (unit + e2e), the cover binary, and the
 # merged dir. The final cover.out / cover.html are the only kept artifacts.
 .coverage/
+
+# Hugo build output and cache for the documentation website (built by
+# `make website`, published from CI).
+/website/public/
+/website/resources/
+/website/.hugo_build.lock
+/dist/
+
+# atago run state (last failed scenarios).
+/.atago/

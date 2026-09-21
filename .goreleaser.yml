@@ -1,3 +1,4 @@
+version: 2
 project_name: jose
 env:
   - GO111MODULE=on
@@ -38,9 +39,22 @@ changelog:
 nfpms:
   - maintainer: Naohiro CHIKAMATSU <n.chika156@gmail.com>
     description: jose - CLI tool for JOSE (JSON Object Signing and Encryption)
-    homepage: https://github.com/nao1215/jose
+    homepage: https://nao1215.github.io/jose/
     license: MIT License
     formats:
       - deb
       - rpm
       - apk
+brews:
+  - name: jose
+    description: CLI tool for JOSE - generate JWK/JWKS, sign and verify JWS, encrypt and decrypt JWE
+    homepage: https://nao1215.github.io/jose/
+    license: MIT
+    repository:
+      owner: nao1215
+      name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    install: |-
+      bin.install "jose"
+    test: |
+      system "#{bin}/jose", "version"

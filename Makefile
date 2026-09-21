@@ -1,4 +1,4 @@
-.PHONY: build test coverage e2e test-fuzz lint bench bench-compare clean demo demo-pipe tools help
+.PHONY: build test coverage e2e test-fuzz lint bench bench-compare clean demo demo-pipe overview website website-serve tools help
 
 # jwx v4 uses encoding/json/v2, which is still gated behind GOEXPERIMENT=jsonv2
 # on Go 1.26. Export it for every go invocation in this Makefile.
@@ -70,6 +70,15 @@ demo-pipe: build ## Regenerate the pipe gif from doc/img/pipe.tape (needs vhs)
 	vhs doc/img/pipe.tape && mv pipe.gif doc/img/pipe.gif
 	rm -rf $(DEMO_PIPE_DIR) $(DEMO_BIN)
 	@echo 'Wrote doc/img/pipe.gif'
+
+overview: ## Regenerate doc/img/overview.png, the website social card source, from the last frame of doc/img/demo.gif (needs ffmpeg)
+	ffmpeg -loglevel error -sseof -0.1 -i doc/img/demo.gif -frames:v 1 -update 1 -y doc/img/overview.png
+
+website: ## Build the documentation website into website/public (requires hugo)
+	cd website && hugo --gc --minify --cleanDestinationDir
+
+website-serve: ## Serve the documentation website locally with live reload (requires hugo)
+	cd website && hugo server
 
 tools: ## Install developer tools (linter, coverage, atago for e2e)
 	$(GO_INSTALL) github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest

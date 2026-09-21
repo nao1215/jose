@@ -1,0 +1,66 @@
+# Configuration for the hosted documentation website (GitHub Pages).
+# Content comes from the repository itself: doc/cookbook.md is mounted read-only
+# and turned into a page by content/_content.gotmpl, so the committed file stays
+# the single source of truth, and the same file is what the atago suite runs.
+baseURL = "https://nao1215.github.io/jose/"
+locale = "en"
+title = "jose"
+disableKinds = ["taxonomy", "term", "rss"]
+enableRobotsTXT = true
+timeZone = "UTC"
+
+[params]
+tagline = "JWK, JWS, and JWE from the shell"
+description = "jose generates keys (JWK), publishes JWKS, signs and verifies (JWS), and encrypts and decrypts (JWE) from the command line, including the ES256 keys an atproto OAuth confidential client needs."
+
+[markup.highlight]
+noClasses = false
+
+[markup.tableOfContents]
+startLevel = 2
+endLevel = 3
+
+[[menus.main]]
+name = "Install"
+pageRef = "/install"
+weight = 10
+
+[[menus.main]]
+name = "Cookbook"
+pageRef = "/cookbook"
+weight = 20
+
+[[menus.main]]
+name = "Reference"
+pageRef = "/reference"
+weight = 30
+
+[module]
+[[module.mounts]]
+source = "content"
+target = "content"
+
+[[module.mounts]]
+source = "layouts"
+target = "layouts"
+
+[[module.mounts]]
+source = "assets"
+target = "assets"
+
+# Repository docs, mounted so pages can be generated from the committed files.
+[[module.mounts]]
+source = "../doc/cookbook.md"
+target = "assets/doc/cookbook.md"
+
+# Images served as-is.
+[[module.mounts]]
+source = "../doc/img"
+target = "static/img"
+
+# The same images, mounted again as processable assets so the layouts can derive
+# a right-ratio social card and a square favicon at build time without
+# committing any extra binary.
+[[module.mounts]]
+source = "../doc/img"
+target = "assets/imgsrc"

@@ -49,6 +49,18 @@ else
 	(cd "$REPO_ROOT" && env GOEXPERIMENT=jsonv2 CGO_ENABLED=0 go build -o "$TMP/bin/$BIN" main.go)
 fi
 
+# The cookbook and website specs run their recipes through a shell, because the
+# recipes are POSIX shell. On Windows atago's default shell is cmd.exe, so point
+# it at the Git Bash running this script, unless the caller chose one.
+case "$(uname -s)" in
+MINGW* | MSYS* | CYGWIN*)
+	if [ -z "${ATAGO_SHELL:-}" ]; then
+		ATAGO_SHELL="$(cygpath -w "$(command -v bash)")"
+		export ATAGO_SHELL
+	fi
+	;;
+esac
+
 # Put the e2e-built jose first on PATH so the specs exercise that binary.
 export PATH="$TMP/bin:$PATH"
 
