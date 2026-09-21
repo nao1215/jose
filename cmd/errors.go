@@ -47,6 +47,15 @@ var (
 	ErrGenerateOctetSeq         = errors.New("failed to generate octet sequence key")
 	ErrGeneratePublicKey        = errors.New("failed to generate public keys")
 	ErrGenerateJWKFromRawKey    = errors.New("failed to generate new JWK from raw key")
+	ErrInvalidKeyUse            = errors.New("key use is one of 'sig', 'enc'")
+	ErrInvalidKeyAlgorithm      = errors.New("unsupported key algorithm; the supported names can be checked with '$jose jwa -s' and '$jose jwa -K'")
+	ErrKeyUseMismatch           = errors.New("--use does not match --alg")
+	ErrKeyAlgorithmMismatch     = errors.New("--alg does not match the key type")
+	ErrKeyParametersForPem      = errors.New("--kid, --alg, --use, and --set need json output (PEM cannot carry them)")
+	ErrSetKeyParameter          = errors.New("failed to set key parameter")
+	ErrSymmetricKeyHasNoPublic  = errors.New("oct (symmetric) keys have no public key")
+	ErrKeyParametersNeedOneKey  = errors.New("--kid, --alg, and --use need exactly one input key")
+	ErrDuplicateKeyID           = errors.New("duplicate key ID (kid) across the input keys")
 )
 
 // wrap return wrapping error with message.

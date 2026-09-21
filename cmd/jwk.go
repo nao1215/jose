@@ -25,6 +25,7 @@ func newJWKCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(newJWKGenerateCmd())
+	cmd.AddCommand(newJWKPublicCmd())
 	return cmd
 }
 
@@ -38,10 +39,14 @@ func newJWKGenerateCmd() *cobra.Command {
 
 	cmd.Flags().StringP("curve", "c", "", "elliptic curve for EC (P-256/P-384/P-521) or OKP (Ed25519/X25519) keys")
 	cmd.Flags().StringP("type", "t", "", "jwk type (RSA/EC/OKP/oct)")
-	cmd.Flags().IntP("size", "s", defaultKeySize, "key size in bits for RSA or oct keys (default 2048)")
-	cmd.Flags().StringP("output-format", "O", "json", "output format for RSA/EC keys (json/pem)")
+	cmd.Flags().IntP("size", "s", defaultKeySize, "key size in bits for RSA or oct keys")
+	cmd.Flags().StringP("output-format", "O", "json", "output format (json/pem); pem is available for RSA, EC, and OKP Ed25519 keys")
 	cmd.Flags().StringP("output", "o", "-", "output to file")
 	cmd.Flags().BoolP("public-key", "p", false, "display public key")
+	cmd.Flags().String("kid", "", "key ID (kid) to record in the key")
+	cmd.Flags().String("alg", "", "algorithm (alg) to record in the key, e.g. ES256 or RSA-OAEP")
+	cmd.Flags().String("use", "", "public key use (use) to record in the key: sig or enc")
+	cmd.Flags().Bool("set", false, `wrap the key in a JWK Set ({"keys":[...]})`)
 
 	return cmd
 }
@@ -53,6 +58,10 @@ type jwkGenerater struct {
 	OutputFormat string  `validate:"oneof=json pem"`
 	Output       string  `validate:"-"`
 	PublicKey    bool    `validate:"-"`
+	KeyID        string  `validate:"-"`
+	Algorithm    string  `validate:"-"`
+	Use          string  `validate:"-"`
+	AsSet        bool    `validate:"-"`
 	KeySet       jwk.Set `validate:"-"`
 }
 
@@ -87,6 +96,26 @@ func newJWKGenerater(cmd *cobra.Command) (*jwkGenerater, error) {
 		return nil, err
 	}
 
+	keyID, err := cmd.Flags().GetString("kid")
+	if err != nil {
+		return nil, err
+	}
+
+	algorithm, err := cmd.Flags().GetString("alg")
+	if err != nil {
+		return nil, err
+	}
+
+	use, err := cmd.Flags().GetString("use")
+	if err != nil {
+		return nil, err
+	}
+
+	asSet, err := cmd.Flags().GetBool("set")
+	if err != nil {
+		return nil, err
+	}
+
 	keySet := jwk.NewSet()
 
 	return &jwkGenerater{
@@ -97,6 +126,10 @@ func newJWKGenerater(cmd *cobra.Command) (*jwkGenerater, error) {
 		OutputFormat: outputFormat,
 		Output:       output,
 		PublicKey:    publicKey,
+		KeyID:        keyID,
+		Algorithm:    algorithm,
+		Use:          use,
+		AsSet:        asSet,
 	}, nil
 }
 
@@ -131,7 +164,135 @@ func (j *jwkGenerater) valid() error {
 		return err
 	}
 
-	return j.validCurve()
+	if err := j.validCurve(); err != nil {
+		return err
+	}
+
+	return j.validKeyParameters()
+}
+
+// validKeyParameters rejects --alg and --use values that the generated key
+// could never honor, so jose does not publish a JWK that a relying party would
+// refuse later (for example "alg":"ES256" on a P-384 key). PEM cannot carry
+// the parameters, so asking for them with PEM output is rejected too.
+func (j *jwkGenerater) validKeyParameters() error {
+	params := j.keyParameters()
+	if j.OutputFormat == "pem" && (!params.empty() || j.AsSet) {
+		return ErrKeyParametersForPem
+	}
+	return params.valid(j.KeyType, j.Curve, j.KeySize)
+}
+
+func (j *jwkGenerater) keyParameters() keyParameters {
+	return keyParameters{KeyID: j.KeyID, Algorithm: j.Algorithm, Use: j.Use}
+}
+
+// keyParameters are the optional JWK parameters (kid, alg, use) that the
+// --kid, --alg, and --use flags record in a key.
+type keyParameters struct {
+	KeyID     string
+	Algorithm string
+	Use       string
+}
+
+func (p keyParameters) empty() bool {
+	return p.KeyID == "" && p.Algorithm == "" && p.Use == ""
+}
+
+// valid checks the parameters against the key they will be recorded in: a key
+// of keyType, with curve for EC and OKP and size in bits for RSA and oct.
+func (p keyParameters) valid(keyType, curve string, size int) error {
+	if p.Use != "" && p.Use != "sig" && p.Use != "enc" {
+		return ErrInvalidKeyUse
+	}
+	if p.Algorithm == "" {
+		return nil
+	}
+
+	use, ok := algorithmUse(p.Algorithm)
+	if !ok {
+		return wrap(ErrInvalidKeyAlgorithm, "input value="+p.Algorithm)
+	}
+	if p.Use != "" && p.Use != use {
+		return wrap(ErrKeyUseMismatch, p.Algorithm+" is for "+use)
+	}
+	if !algorithmFitsKey(p.Algorithm, keyType, curve, size) {
+		described := keyType
+		if curve != "" {
+			described += " " + curve
+		}
+		return wrap(ErrKeyAlgorithmMismatch, p.Algorithm+" cannot be used with "+described)
+	}
+	return nil
+}
+
+// setOn records the non-empty parameters in key.
+func (p keyParameters) setOn(key jwk.Key) error {
+	params := []struct {
+		name  string
+		value string
+	}{
+		{jwk.KeyIDKey, p.KeyID},
+		{jwk.AlgorithmKey, p.Algorithm},
+		{jwk.KeyUsageKey, p.Use},
+	}
+	for _, param := range params {
+		if param.value == "" {
+			continue
+		}
+		if err := key.Set(param.name, param.value); err != nil {
+			return wrap(ErrSetKeyParameter, param.name+": "+err.Error())
+		}
+	}
+	return nil
+}
+
+// algorithmUse reports whether alg is a signature algorithm ("sig") or a key
+// encryption algorithm ("enc") that jose supports.
+func algorithmUse(alg string) (string, bool) {
+	switch {
+	case contains(supportedSignatureAlgorithms(), alg):
+		return "sig", true
+	case contains(supportedKeyEncryptionAlgorithms(), alg):
+		return "enc", true
+	}
+	return "", false
+}
+
+// algorithmFitsKey reports whether a key of keyType (and curve, for EC and OKP,
+// or size in bits, for oct) can be used with alg. It follows RFC 7518, which is
+// stricter than jwx: each ES algorithm names one curve, and an HMAC key must be
+// at least as long as the hash.
+func algorithmFitsKey(alg, keyType, curve string, size int) bool {
+	switch alg {
+	case "ES256":
+		return keyType == "EC" && curve == "P-256"
+	case "ES384":
+		return keyType == "EC" && curve == "P-384"
+	case "ES512":
+		return keyType == "EC" && curve == "P-521"
+	case "EdDSA":
+		return keyType == "OKP" && curve == "Ed25519"
+	case "HS256":
+		return keyType == "oct" && size >= 256
+	case "HS384":
+		return keyType == "oct" && size >= 384
+	case "HS512":
+		return keyType == "oct" && size >= 512
+	case "A128KW", "A128GCMKW":
+		return keyType == "oct" && size == 128
+	case "A192KW", "A192GCMKW":
+		return keyType == "oct" && size == 192
+	case "A256KW", "A256GCMKW":
+		return keyType == "oct" && size == 256
+	case "PS256", "PS384", "PS512", "RS256", "RS384", "RS512", "RSA-OAEP", "RSA-OAEP-256", "RSA1_5":
+		return keyType == "RSA"
+	case "ECDH-ES", "ECDH-ES+A128KW", "ECDH-ES+A192KW", "ECDH-ES+A256KW":
+		return keyType == "EC" || (keyType == "OKP" && curve == "X25519")
+	}
+	// PBES2 treats the key as a password and dir as the content key, whose
+	// length depends on the content encryption chosen later.
+	return keyType == "oct"
 }
 
 // validOct rejects oct-key options that jose cannot honor before the key is
@@ -225,6 +386,11 @@ func (j *jwkGenerater) generate() (err error) {
 	key, err := jwk.Import[jwk.Key](rawKey)
 	if err != nil {
 		return wrap(ErrGenerateJWKFromRawKey, err.Error())
+	}
+	// The parameters go on the private key so that the public key derived
+	// from it carries them too.
+	if err := j.keyParameters().setOn(key); err != nil {
+		return err
 	}
 
 	if err := j.KeySet.AddKey(key); err != nil {
@@ -324,7 +490,7 @@ func (j *jwkGenerater) writeJWKSet(w io.Writer) error {
 	case "pem":
 		return j.writeJWKSetByPemFormat(w)
 	case "json":
-		return j.writeJWKSetByPemByJSONFormat(w)
+		return writeKeys(w, j.KeySet, j.AsSet)
 	default:
 		return ErrInvalidKeyFormat
 	}
@@ -347,21 +513,18 @@ func (j *jwkGenerater) writeJWKSetByPemFormat(w io.Writer) error {
 	return nil
 }
 
-func (j *jwkGenerater) writeJWKSetByPemByJSONFormat(w io.Writer) error {
-	if j.KeySet.Len() != 1 {
-		if err := writeJSON(w, j.KeySet); err != nil {
-			return err
-		}
-	} else {
-		key, ok := j.KeySet.Key(0)
-		if !ok {
-			return ErrEmptyKey
-		}
-		if err := writeJSON(w, key); err != nil {
-			return err
-		}
+// writeKeys writes set as JSON. A set holding exactly one key is written as
+// that bare key unless asSet is true, so the common single-key case stays a
+// plain JWK while --set always yields {"keys":[...]}.
+func writeKeys(w io.Writer, set jwk.Set, asSet bool) error {
+	if asSet || set.Len() != 1 {
+		return writeJSON(w, set)
 	}
-	return nil
+	key, ok := set.Key(0)
+	if !ok {
+		return ErrEmptyKey
+	}
+	return writeJSON(w, key)
 }
 
 func runJWKGenerate(cmd *cobra.Command, _ []string) error {
