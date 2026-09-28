@@ -1,7 +1,17 @@
 name: Fuzz
 
+# Pull requests and pushes run each Fuzz target for a short smoke run. The
+# nightly schedule is the part that actually searches: `go test` alone only
+# replays the seed corpus and testdata/fuzz/, so without it no new input is
+# ever tried. The search length per target can be set on a manual run.
 on:
+  schedule:
+    - cron: "0 5 * * *"
   workflow_dispatch:
+    inputs:
+      fuzztime:
+        description: "go test -fuzztime per target"
+        default: "5m"
   push:
     branches: [main]
   pull_request:
@@ -17,9 +27,10 @@ permissions:
 
 jobs:
   fuzz:
-    name: Short fuzz smoke test
+    name: Fuzz
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Five targets at 5m each on the nightly run, plus the build.
+    timeout-minutes: 45
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -31,5 +42,16 @@ jobs:
         with:
           go-version: "stable"
 
-      - name: Run fuzz targets for a short time
-        run: make test-fuzz FUZZ_TIME=20s
+      - name: Run fuzz targets
+        env:
+          FUZZTIME: ${{ inputs.fuzztime || (github.event_name == 'schedule' && '5m') || '20s' }}
+        run: make test-fuzz FUZZ_TIME="$FUZZTIME"
+
+      # A failing input is written under testdata/fuzz/<Name>/. Download it,
+      # commit it next to the target, and fix the bug with it as the
+      # regression test.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: fuzz-crashers
+          path: "**/testdata/fuzz/**"
