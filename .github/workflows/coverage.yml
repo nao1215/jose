@@ -7,12 +7,8 @@ on:
   pull_request:
     branches: [main]
 
-# octocov reports/diffs coverage to the Actions-artifact datastore and comments
-# on pull requests, so it needs more than the default read-only token.
 permissions:
   contents: read
-  actions: write
-  pull-requests: write
 
 env:
   # jwx v4 uses encoding/json/v2, gated behind this experiment on Go 1.26.
@@ -29,12 +25,19 @@ jobs:
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 15
 
+    # octocov reports/diffs coverage to the Actions-artifact datastore and
+    # comments on pull requests, so this job needs more than read access.
+    permissions:
+      contents: read
+      actions: write
+      pull-requests: write
+
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: actions/setup-go@v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "stable"
 
@@ -49,7 +52,7 @@ jobs:
       - name: Run combined unit + E2E coverage
         run: make coverage
 
-      - uses: k1LoW/octocov-action@v1.5.1
+      - uses: k1LoW/octocov-action@a167dc0dee441b7ffc45e1b862ab55ec0d87f278 # v1.5.2
         with:
           config: .octocov.yml
           args: --report=cover.out
