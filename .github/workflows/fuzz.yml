@@ -9,8 +9,13 @@ on:
     - cron: "0 5 * * *"
   workflow_dispatch:
     inputs:
+      # A choice rather than free text: the targets run one after another in
+      # a single 45-minute job, so five targets at 5m is the longest run
+      # that still finishes before the timeout.
       fuzztime:
         description: "go test -fuzztime per target"
+        type: choice
+        options: ["20s", "1m", "5m"]
         default: "5m"
   push:
     branches: [main]
