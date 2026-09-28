@@ -7,6 +7,8 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-09-28
+
 ### Changed
 
 - Releases are signed and ship with SLSA build provenance. `checksums.txt` is signed with cosign (keyless), producing `checksums.txt.sigstore.json`, and SLSA build provenance is attached as `multiple.intoto.jsonl`, which `slsa-verifier verify-artifact` checks against a downloaded archive. The release run verifies every published archive against it before finishing.
@@ -205,7 +207,8 @@ defaults explicit, and adds a thorough test suite.
 Pre-review development releases (0.0.1 through 0.0.8). See the git history and
 the [release page](https://github.com/nao1215/jose/releases) for details.
 
-[Unreleased]: https://github.com/nao1215/jose/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/nao1215/jose/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/nao1215/jose/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/nao1215/jose/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/nao1215/jose/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/nao1215/jose/compare/v0.3.2...v0.3.3
