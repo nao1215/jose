@@ -39,6 +39,9 @@ GOEXPERIMENT=jsonv2 go install github.com/nao1215/jose@latest
 Prebuilt binaries and .deb/.rpm/.apk packages are on the
 [release page](https://github.com/nao1215/jose/releases). jose is tested on
 Linux (the main target), macOS, and Windows.
+Releases after v0.4.1 sign `checksums.txt` with cosign and ship an SPDX SBOM
+and SLSA build provenance; the commands that verify them are in
+[Verifying release integrity](https://nao1215.github.io/jose/install/#verifying-release-integrity).
 
 ## Quick start
 
