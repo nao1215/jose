@@ -6,7 +6,7 @@ repository all help.
 
 ## Development Environment
 
-- Go 1.26 or later (the version is pinned in `go.mod`)
+- Go 1.26.6 or later (the version is pinned in `go.mod`)
 - `make`
 - `git`
 

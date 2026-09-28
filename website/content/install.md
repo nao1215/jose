@@ -20,7 +20,7 @@ The formula installs the prebuilt release binary.
 GOEXPERIMENT=jsonv2 go install github.com/nao1215/jose@latest
 ```
 
-Building from source needs Go 1.26 or newer. jose depends on jwx v4, which uses
+Building from source needs Go 1.26.6 or newer. jose depends on jwx v4, which uses
 `encoding/json/v2`; on Go 1.26 that package is still behind
 `GOEXPERIMENT=jsonv2`, so the experiment must be set when building. The prebuilt
 binaries and packages need no such flag.

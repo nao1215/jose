@@ -29,7 +29,7 @@ Documentation: https://nao1215.github.io/jose/ ([cookbook](https://nao1215.githu
 brew install nao1215/tap/jose
 ```
 
-Or build from source with Go 1.26 or later. jwx v4 uses `encoding/json/v2`,
+Or build from source with Go 1.26.6 or later. jwx v4 uses `encoding/json/v2`,
 which Go 1.26 still keeps behind `GOEXPERIMENT=jsonv2`:
 
 ```shell
