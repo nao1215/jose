@@ -8,6 +8,8 @@ import (
 
 	"github.com/lestrrat-go/jwx/v4/jwk"
 	"github.com/lestrrat-go/jwx/v4/jws"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // failingWriter fails every Write, to exercise the write-error branch of
@@ -485,5 +487,102 @@ func TestResolveVersionAndLine(t *testing.T) {
 	Version = ""
 	if got := resolveVersion(); got == "" {
 		t.Error("resolveVersion() returned empty string")
+	}
+}
+
+// commandWithout copies cmd into a fresh command that declares every flag of
+// cmd except drop, keeping the same RunE.
+func commandWithout(cmd *cobra.Command, drop string) *cobra.Command {
+	stripped := &cobra.Command{Use: cmd.Use, RunE: cmd.RunE}
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		if f.Name != drop {
+			stripped.Flags().AddFlag(f)
+		}
+	})
+	return stripped
+}
+
+// TestRunReportsUndeclaredFlag removes one flag at a time from each command
+// and runs it. Every declared flag must be read by the command (a flag that is
+// never read would make the run succeed), and a flag that cannot be read must
+// stop the run with an error naming that flag instead of falling back to a
+// zero value.
+func TestRunReportsUndeclaredFlag(t *testing.T) {
+	t.Parallel()
+
+	commands := []struct {
+		name  string
+		build func() *cobra.Command
+	}{
+		{"jwa", newJWACmd},
+		{"jwe encrypt", newJWEEncryptCmd},
+		{"jwe decrypt", newJWEDecryptCmd},
+		{"jwk generate", newJWKGenerateCmd},
+		{"jwk public", newJWKPublicCmd},
+		{"jws parse", newJWSParseCmd},
+		{"jws sign", newJWSSignCmd},
+		{"jws verify", newJWSVerifyCmd},
+	}
+	for _, c := range commands {
+		var names []string
+		c.build().Flags().VisitAll(func(f *pflag.Flag) { names = append(names, f.Name) })
+		if len(names) == 0 {
+			t.Fatalf("%s declares no flags", c.name)
+		}
+		for _, name := range names {
+			t.Run(c.name+" without --"+name+" fails naming the flag", func(t *testing.T) {
+				t.Parallel()
+				cmd := commandWithout(c.build(), name)
+				err := cmd.RunE(cmd, []string{filepath.Join(t.TempDir(), "unused")})
+				if err == nil {
+					t.Fatal("run succeeded without the flag")
+				}
+				if want := "flag accessed but not defined: " + name; !strings.HasSuffix(err.Error(), want) {
+					t.Errorf("err = %q, want it to end with %q", err, want)
+				}
+			})
+		}
+	}
+}
+
+func TestRunJWAWithoutOptionsReportsUsageError(t *testing.T) {
+	t.Parallel()
+	// With no option jwa prints its usage; when printing the usage fails too,
+	// both the missing-option error and the usage error reach the caller.
+	usageErr := errors.New("usage failed")
+	cmd := newJWACmd()
+	cmd.SetUsageFunc(func(*cobra.Command) error { return usageErr })
+	err := runJWA(cmd, nil)
+	if !errors.Is(err, ErrNoOptions) {
+		t.Errorf("want ErrNoOptions, got %v", err)
+	}
+	if !errors.Is(err, usageErr) {
+		t.Errorf("want the usage error joined in, got %v", err)
+	}
+}
+
+func TestWriteJWKSetPemRejectsX25519Key(t *testing.T) {
+	t.Parallel()
+	// valid() rejects X25519 with PEM output up front; this pins the encoder
+	// layer behind it, which must report the failure rather than write
+	// anything.
+	g := &jwkGenerater{KeyType: "OKP", Curve: "X25519", OutputFormat: "pem", KeySet: jwk.NewSet()}
+	raw, err := g.generateOKP()
+	if err != nil {
+		t.Fatal(err)
+	}
+	key, err := jwk.Import[jwk.Key](raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := g.KeySet.AddKey(key); err != nil {
+		t.Fatal(err)
+	}
+	var b strings.Builder
+	if err := g.writeJWKSet(&b); !errors.Is(err, ErrFormatKeyInPem) {
+		t.Errorf("want ErrFormatKeyInPem, got %v", err)
+	}
+	if b.Len() != 0 {
+		t.Errorf("nothing should be written on failure, got %q", b.String())
 	}
 }
