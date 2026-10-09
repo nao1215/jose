@@ -62,3 +62,46 @@ func TestGenerateManpages(t *testing.T) {
 		}
 	})
 }
+
+func TestGenerateManpagesReportsTempDirError(t *testing.T) {
+	// The pages are rendered in a temporary directory first; when none can be
+	// made, nothing is installed and the error is returned.
+	t.Setenv("TMPDIR", filepath.Join(t.TempDir(), "no-such-dir"))
+	dst := t.TempDir()
+	if err := generateManpages(dst); err == nil {
+		t.Error("generateManpages should fail when no temporary directory can be made")
+	}
+	pages, err := filepath.Glob(filepath.Join(dst, "*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pages) != 0 {
+		t.Errorf("no page should be installed, got %v", pages)
+	}
+}
+
+func TestCopyManpagesReportsSourceErrors(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		source func(t *testing.T) string
+	}{
+		{
+			name:   "missing source page fails to open",
+			source: func(t *testing.T) string { return filepath.Join(t.TempDir(), "jose.1") },
+		},
+		{
+			name:   "directory as source page fails to copy",
+			source: func(t *testing.T) string { return t.TempDir() },
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if err := copyManpages([]string{tt.source(t)}, t.TempDir()); err == nil {
+				t.Error("copyManpages should fail")
+			}
+		})
+	}
+}
