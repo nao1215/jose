@@ -291,6 +291,83 @@ func TestJWKPublic(t *testing.T) {
 			t.Errorf("err = %v, want %v", err, ErrOpenFile)
 		}
 	})
+
+	t.Run("rejects an unknown key format", func(t *testing.T) {
+		t.Parallel()
+		priv := genKeyWith(t, &jwkGenerater{KeyType: "EC", Curve: "P-256"})
+		if _, err := publicKeysOf([]string{priv}, "der"); !errors.Is(err, ErrInvalidKeyFormat) {
+			t.Errorf("err = %v, want %v", err, ErrInvalidKeyFormat)
+		}
+	})
+}
+
+// runJWKPublicWith runs "jwk public" with flags and args and returns the error.
+func runJWKPublicWith(t *testing.T, flags map[string]string, args ...string) error {
+	t.Helper()
+	cmd := newJWKPublicCmd()
+	for name, value := range flags {
+		if err := cmd.Flags().Set(name, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return runJWKPublic(cmd, args)
+}
+
+func TestRunJWKPublic(t *testing.T) {
+	t.Parallel()
+
+	t.Run("writes the labeled public key to --output", func(t *testing.T) {
+		t.Parallel()
+		priv := genKey(t, "EC", "P-256", 0, "pem", false)
+		out := filepath.Join(t.TempDir(), "pub.json")
+		flags := map[string]string{"key-format": "pem", "output": out, "kid": "k1", "alg": "ES256", "use": "sig"}
+		if err := runJWKPublicWith(t, flags, priv); err != nil {
+			t.Fatal(err)
+		}
+		set := readKeySet(t, out, "json")
+		key, _ := set.Key(0)
+		if key.Has("d") {
+			t.Error("public key still has the private d parameter")
+		}
+		if kid, _ := key.KeyID(); kid != "k1" {
+			t.Errorf("kid = %q, want k1", kid)
+		}
+	})
+
+	t.Run("label flags with two input keys fail without writing", func(t *testing.T) {
+		t.Parallel()
+		a := genKeyWith(t, &jwkGenerater{KeyType: "EC", Curve: "P-256", KeyID: "a"})
+		b := genKeyWith(t, &jwkGenerater{KeyType: "EC", Curve: "P-256", KeyID: "b"})
+		out := filepath.Join(t.TempDir(), "pub.json")
+		err := runJWKPublicWith(t, map[string]string{"kid": "k1", "output": out}, a, b)
+		if !errors.Is(err, ErrKeyParametersNeedOneKey) {
+			t.Errorf("err = %v, want %v", err, ErrKeyParametersNeedOneKey)
+		}
+		if _, statErr := os.Stat(out); !os.IsNotExist(statErr) {
+			t.Errorf("output file should not be created, stat err = %v", statErr)
+		}
+	})
+
+	t.Run("unreadable input fails before the output is opened", func(t *testing.T) {
+		t.Parallel()
+		out := filepath.Join(t.TempDir(), "pub.json")
+		err := runJWKPublicWith(t, map[string]string{"output": out}, filepath.Join(t.TempDir(), "nope"))
+		if !errors.Is(err, ErrOpenFile) {
+			t.Errorf("err = %v, want %v", err, ErrOpenFile)
+		}
+		if _, statErr := os.Stat(out); !os.IsNotExist(statErr) {
+			t.Errorf("output file should not be created, stat err = %v", statErr)
+		}
+	})
+
+	t.Run("unwritable output reports ErrCreateFile", func(t *testing.T) {
+		t.Parallel()
+		priv := genKeyWith(t, &jwkGenerater{KeyType: "EC", Curve: "P-256"})
+		out := filepath.Join(t.TempDir(), "no-such-dir", "pub.json")
+		if err := runJWKPublicWith(t, map[string]string{"output": out}, priv); !errors.Is(err, ErrCreateFile) {
+			t.Errorf("err = %v, want %v", err, ErrCreateFile)
+		}
+	})
 }
 
 func TestLabelOnlyKey(t *testing.T) {
