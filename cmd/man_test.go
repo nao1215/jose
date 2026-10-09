@@ -66,7 +66,11 @@ func TestGenerateManpages(t *testing.T) {
 func TestGenerateManpagesReportsTempDirError(t *testing.T) {
 	// The pages are rendered in a temporary directory first; when none can be
 	// made, nothing is installed and the error is returned.
-	t.Setenv("TMPDIR", filepath.Join(t.TempDir(), "no-such-dir"))
+	missing := filepath.Join(t.TempDir(), "no-such-dir")
+	// os.TempDir reads TMPDIR on Unix and TMP, then TEMP, on Windows.
+	t.Setenv("TMPDIR", missing)
+	t.Setenv("TMP", missing)
+	t.Setenv("TEMP", missing)
 	dst := t.TempDir()
 	if err := generateManpages(dst); err == nil {
 		t.Error("generateManpages should fail when no temporary directory can be made")
