@@ -30,3 +30,4 @@ dist
 
 # atago run state (last failed scenarios).
 /.atago/
+/third_party_licenses/
