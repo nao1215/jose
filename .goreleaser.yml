@@ -6,6 +6,9 @@ before:
   hooks:
     - go mod tidy
     #- go generate ./...
+    - sh -c 'GOROOT="$(go env GOROOT)" CGO_ENABLED=0 GOEXPERIMENT=jsonv2 GOOS=linux go-licenses save . --save_path=third_party_licenses/linux --force'
+    - sh -c 'GOROOT="$(go env GOROOT)" CGO_ENABLED=0 GOEXPERIMENT=jsonv2 GOOS=windows go-licenses save . --save_path=third_party_licenses/windows --force'
+    - sh -c 'GOROOT="$(go env GOROOT)" CGO_ENABLED=0 GOEXPERIMENT=jsonv2 GOOS=darwin go-licenses save . --save_path=third_party_licenses/darwin --force'
 builds:
   - main: .
     ldflags:
@@ -26,6 +29,14 @@ archives:
     format_overrides:
       - goos: windows
         formats: [zip]
+    # Listing files replaces goreleaser's defaults, so the project's own
+    # LICENSE, README and CHANGELOG are named here too.
+    files:
+      - LICENSE*
+      - README*
+      - CHANGELOG*
+      - src: "third_party_licenses/{{ .Os }}/**/*"
+        dst: THIRD_PARTY_LICENSES
 release:
   # A re-run of the release workflow (for example after a failed Homebrew
   # step) re-uploads every artifact. Replace the ones already on the release
@@ -68,6 +79,10 @@ nfpms:
       - deb
       - rpm
       - apk
+    contents:
+      - src: ./third_party_licenses/linux
+        dst: /usr/share/doc/jose/THIRD_PARTY_LICENSES
+        type: tree
 brews:
   - name: jose
     description: CLI tool for JOSE - generate JWK/JWKS, sign and verify JWS, encrypt and decrypt JWE
