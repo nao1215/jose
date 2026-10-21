@@ -81,7 +81,7 @@ website-serve: ## Serve the documentation website locally with live reload (requ
 	cd website && hugo server
 
 tools: ## Install developer tools (linter, coverage, atago for e2e)
-	$(GO_INSTALL) github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+	$(GO_INSTALL) github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
 	$(GO_INSTALL) github.com/k1LoW/octocov@latest
 	$(GO_INSTALL) github.com/charmbracelet/vhs@latest
 	$(GO_INSTALL) github.com/nao1215/atago@latest
