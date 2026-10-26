@@ -1,12 +1,12 @@
 module github.com/nao1215/jose
 
-go 1.26.6
+go 1.26.10
 
 require (
 	github.com/charmbracelet/log v1.0.0
 	github.com/go-playground/validator/v10 v10.30.5
 	github.com/google/go-cmp v0.7.0
-	github.com/lestrrat-go/jwx/v4 v4.5.0
+	github.com/lestrrat-go/jwx/v4 v4.6.0
 	github.com/nao1215/gorky v0.2.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
@@ -37,7 +37,6 @@ require (
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/valyala/fastjson v1.6.10 // indirect
 	github.com/xo/terminfo v1.2.0 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e // indirect
