@@ -13,6 +13,7 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 - Release archives and Linux packages now include the license texts of the linked dependencies under THIRD_PARTY_LICENSES/. CI checks dependency licenses on Linux, Windows, and macOS.
 - Dependencies: golang.org/x/crypto v0.58.0, golang.org/x/sys v0.49.0, golang.org/x/text v0.43.0, gabriel-vasile/mimetype v1.4.16.
+- Dependencies: spf13/pflag v1.1.0, go-playground/validator/v10 v10.30.6, go.yaml.in/yaml/v3 v3.0.6.
 
 ## [0.4.2] - 2026-09-28
 
