@@ -537,7 +537,7 @@ func TestRunReportsUndeclaredFlag(t *testing.T) {
 				if err == nil {
 					t.Fatal("run succeeded without the flag")
 				}
-				if want := "flag accessed but not defined: " + name; !strings.HasSuffix(err.Error(), want) {
+				if want := "flag \"" + name + "\" does not exist"; !strings.HasSuffix(err.Error(), want) {
 					t.Errorf("err = %q, want it to end with %q", err, want)
 				}
 			})
