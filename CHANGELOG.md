@@ -9,6 +9,8 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ### Changed
 
+- Update jwx to v4.6.0, requiring Go 1.26.10 or later. Go 1.26 and 1.27 remain supported.
+
 - Release archives and Linux packages now include the license texts of the linked dependencies under THIRD_PARTY_LICENSES/. CI checks dependency licenses on Linux, Windows, and macOS.
 - Dependencies: golang.org/x/crypto v0.58.0, golang.org/x/sys v0.49.0, golang.org/x/text v0.43.0, gabriel-vasile/mimetype v1.4.16.
 
