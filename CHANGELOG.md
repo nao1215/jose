@@ -7,6 +7,15 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ## [Unreleased]
 
+### Security
+
+- Update golang.org/x/crypto to v0.59.0 for GO-2026-5932.
+
+### Changed
+
+- On Windows, `jose bug-report` opens the issue page in the default browser through rundll32 instead of `cmd /C start msedge`, so cmd.exe no longer parses the URL.
+- CI scans the repository with gosec and Trivy on every pull request (Trivy covers dependency vulnerabilities, committed secrets and misconfigurations, and also runs daily). Workflow actions are recorded in `.github/workflows/actions.lock`, which CI verifies against the pinned commits.
+
 ## [0.4.3] - 2026-11-09
 
 ### Changed
