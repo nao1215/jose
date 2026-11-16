@@ -81,7 +81,7 @@ func copyManpages(manFiles []string, dst string) error {
 			}
 		}()
 
-		out, err := os.Create(filepath.Join(dst, filepath.Base(file)+".gz"))
+		out, err := os.Create(filepath.Join(dst, filepath.Base(file)+".gz")) // #nosec G304 -- dst is the man page directory and file is a page this command generated
 		if err != nil {
 			return err
 		}

@@ -8,5 +8,5 @@ import (
 )
 
 func openBrowser(targetURL string) bool {
-	return exec.Command("xdg-open", targetURL).Start() == nil
+	return exec.Command("xdg-open", targetURL).Start() == nil // #nosec G204 -- targetURL is the issue URL bugReport builds
 }

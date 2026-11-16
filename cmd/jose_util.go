@@ -55,7 +55,7 @@ func openInputFile(path string) (io.ReadCloser, error) {
 		return io.NopCloser(os.Stdin), nil
 	}
 
-	f, err := os.Open(path)
+	f, err := os.Open(path) // #nosec G304 -- path is the input file the user named
 	if err != nil {
 		return nil, wrap(ErrOpenFile, err.Error())
 	}
@@ -160,7 +160,7 @@ func openOutputFile(path string) (io.WriteCloser, error) {
 	case "":
 		return nil, ErrRequireFileName
 	default:
-		f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+		f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600) // #nosec G304 -- path is the output file the user named
 		if err != nil {
 			return nil, fmt.Errorf(`%w: %s`, ErrCreateFile, err.Error())
 		}
@@ -202,7 +202,7 @@ func getKeyFile(keyFile, format string) (jwk.Set, error) {
 		return nil, err
 	}
 
-	data, err := os.ReadFile(keyFile) //nolint:gosec // key path is supplied by the user on purpose
+	data, err := os.ReadFile(keyFile) // #nosec G304 -- key path is supplied by the user on purpose
 	if err != nil {
 		return nil, wrap(ErrOpenFile, err.Error())
 	}
