@@ -34,7 +34,7 @@ The properties use [rapid](https://pkg.go.dev/pgregory.net/rapid). Each one draw
 
 ## Snapshot tests
 
-The snapshots pin the whole output of the commands whose output depends only on their input: the `jose jwa` lists, `jose jwk public` of fixed keys, `jose jws sign` with EdDSA and HS256 (both deterministic, so the same key and payload give the same token) and `jose jws parse --all`. The keys are throwaway fixtures written by the spec. `.gitattributes` keeps the snapshots LF on Windows, and `.gitleaks.toml` allows the signed tokens in them.
+The snapshots pin the whole output of the commands whose output depends only on their input: the `jose jwa` lists, `jose jwk public` of fixed keys, `jose jws sign` with EdDSA and HS256 (both deterministic, so the same key and payload give the same token) and `jose jws parse --all`. The keys are throwaway fixtures written by the spec. `.gitattributes` keeps the snapshots LF on Windows, and `.gitleaks.toml` and `trivy-secret.yaml` allow the signed tokens in them.
 
 ## Mutation testing
 
