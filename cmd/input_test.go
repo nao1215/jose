@@ -38,7 +38,9 @@ func withStdinPipe(t *testing.T, data string) {
 	t.Cleanup(func() {
 		os.Stdin = oldStdin
 		stdinIsPipe = oldPipe
-		_ = r.Close()
+		if err := r.Close(); err != nil {
+			t.Error(err)
+		}
 	})
 }
 

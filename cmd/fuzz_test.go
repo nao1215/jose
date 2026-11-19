@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -21,9 +22,13 @@ func FuzzJWSParse(f *testing.F) {
 	f.Add([]byte("....."))
 	f.Add([]byte("a.b.c"))
 
-	f.Fuzz(func(_ *testing.T, data []byte) {
-		// jws.Parse must not panic on arbitrary bytes.
-		_, _ = jws.Parse(data)
+	f.Fuzz(func(t *testing.T, data []byte) {
+		// jws.Parse must not panic on arbitrary bytes, and a nil error comes
+		// with a message.
+		msg, err := jws.Parse(data)
+		if err == nil && msg == nil {
+			t.Fatalf("jws.Parse(%q) returned neither a message nor an error", data)
+		}
 	})
 }
 
@@ -37,10 +42,13 @@ func FuzzJWSVerify(f *testing.F) {
 		f.Fatal(err)
 	}
 
-	f.Fuzz(func(_ *testing.T, data []byte) {
+	f.Fuzz(func(t *testing.T, data []byte) {
 		v := &jwsVerifier{Algorithm: "ES256"}
-		// Discard output; we only care that it does not panic.
-		_ = v.writeVerifyResult(io.Discard, data, keyset)
+		// No input may panic, and none may verify: nothing in the corpus is
+		// signed with this freshly generated key.
+		if err := v.writeVerifyResult(io.Discard, data, keyset); err == nil {
+			t.Fatalf("verified %q, which was not signed with the key", data)
+		}
 	})
 }
 
@@ -53,11 +61,18 @@ func FuzzJWEDecrypt(f *testing.F) {
 	if err != nil {
 		f.Fatal(err)
 	}
-	key, _ := keyset.Key(0)
+	key, ok := keyset.Key(0)
+	if !ok {
+		f.Fatal("the generated key set is empty")
+	}
 
-	f.Fuzz(func(_ *testing.T, data []byte) {
+	f.Fuzz(func(t *testing.T, data []byte) {
 		d := &jweDecrypter{}
-		_, _ = d.decryptMessage(data, key)
+		// No input may panic, and none may decrypt: nothing in the corpus is
+		// encrypted to this freshly generated key.
+		if _, err := d.decryptMessage(data, key); err == nil {
+			t.Fatalf("decrypted %q, which was not encrypted to the key", data)
+		}
 	})
 }
 
@@ -70,13 +85,18 @@ func FuzzGetKeyFile(f *testing.F) {
 	dir := f.TempDir()
 	path := filepath.Join(dir, "key")
 
-	f.Fuzz(func(_ *testing.T, data []byte) {
+	f.Fuzz(func(t *testing.T, data []byte) {
 		if err := os.WriteFile(path, data, 0600); err != nil {
-			return
+			t.Fatal(err)
 		}
-		// Both formats parse untrusted bytes; neither must panic.
-		_, _ = getKeyFile(path, "json")
-		_, _ = getKeyFile(path, "pem")
+		// Both formats parse untrusted bytes; neither must panic, and a nil
+		// error comes with a key set.
+		for _, format := range []string{"json", "pem"} {
+			set, err := getKeyFile(path, format)
+			if err == nil && set == nil {
+				t.Fatalf("getKeyFile(%q, %s) returned neither a key set nor an error", data, format)
+			}
+		}
 	})
 }
 
@@ -92,8 +112,16 @@ func FuzzSignOptionsHeader(f *testing.F) {
 		f.Fatal(err)
 	}
 
-	f.Fuzz(func(_ *testing.T, header string) {
+	f.Fuzz(func(t *testing.T, header string) {
 		s := &jwsSigner{Header: header}
-		_, _ = s.signOptions(jwa.HS256(), key)
+		// A header jose cannot use is reported as ErrParseHeader; any other
+		// header yields the one signing option.
+		opts, err := s.signOptions(jwa.HS256(), key)
+		if err != nil && !errors.Is(err, ErrParseHeader) {
+			t.Fatalf("signOptions(%q) failed with %v, want ErrParseHeader", header, err)
+		}
+		if err == nil && len(opts) != 1 {
+			t.Fatalf("signOptions(%q) returned %d options, want 1", header, len(opts))
+		}
 	})
 }

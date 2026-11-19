@@ -113,3 +113,84 @@ scenarios:
           exit_code: { not: 0 }
           stderr:
             contains: "exactly one key"
+
+  # Output that cannot be written must fail the command. These redirect
+  # standard output to /dev/full, which only Linux has, so they need a shell
+  # and run on Linux only.
+  - name: jws sign exits non-zero when the token cannot be written
+    only:
+      os: linux  # /dev/full is Linux's
+    steps:
+      - *payload
+      - *genec
+      - run:
+          command: jose jws sign --algorithm ES256 --key ec.jwk payload.json > /dev/full
+          shell: true
+      - assert:
+          exit_code: 1
+          stderr:
+            contains: "failed to write output"
+
+  - name: jws verify and parse exit non-zero when the payload cannot be written
+    only:
+      os: linux  # /dev/full is Linux's
+    steps:
+      - *payload
+      - *genec
+      - run:
+          command: jose jws sign --algorithm ES256 --key ec.jwk --output token.jws payload.json
+      - run:
+          command: jose jws verify --algorithm ES256 --key ec.jwk token.jws > /dev/full
+          shell: true
+      - assert:
+          exit_code: 1
+          stderr:
+            contains: "failed to write output"
+      - run:
+          command: jose jws parse token.jws > /dev/full
+          shell: true
+      - assert:
+          exit_code: 1
+          stderr:
+            contains: "failed to write output"
+
+  - name: jwe encrypt and decrypt exit non-zero when the result cannot be written
+    only:
+      os: linux  # /dev/full is Linux's
+    steps:
+      - *payload
+      - *genec
+      - run:
+          command: jose jwe encrypt --key ec.jwk --key-encryption ECDH-ES --content-encryption A256GCM payload.json > /dev/full
+          shell: true
+      - assert:
+          exit_code: 1
+          stderr:
+            contains: "failed to write output"
+      - run:
+          command: jose jwe encrypt --key ec.jwk --key-encryption ECDH-ES --content-encryption A256GCM --output c.jwe payload.json
+      - run:
+          command: jose jwe decrypt --key ec.jwk --output /dev/full c.jwe
+      - assert:
+          exit_code: 1
+          stderr:
+            contains: "failed to write output"
+
+  - name: jwa and version exit non-zero when the list cannot be written
+    only:
+      os: linux  # /dev/full is Linux's
+    steps:
+      - run:
+          command: jose jwa --signature > /dev/full
+          shell: true
+      - assert:
+          exit_code: 1
+          stderr:
+            contains: "failed to write output"
+      - run:
+          command: jose version > /dev/full
+          shell: true
+      - assert:
+          exit_code: 1
+          stderr:
+            contains: "failed to write output"

@@ -84,23 +84,28 @@ func runJWSParse(cmd *cobra.Command, args []string) error {
 	if jwsParser.all {
 		return printAll(os.Stdout, msg)
 	}
-	fmt.Fprintf(os.Stdout, "%s", string(msg.Payload()))
-	return nil
+	return writeOutput(os.Stdout, msg.Payload())
 }
 
 // printAll prints all information about a JWS message: payload, header, and
 // signatures. The destination is a parameter so the output can be redirected
 // and its write errors exercised.
 func printAll(w io.Writer, msg *jws.Message) error {
-	fmt.Fprintf(w, "Payload: %s\n", msg.Payload())
+	if err := writeOutput(w, []byte(fmt.Sprintf("Payload: %s\n", msg.Payload()))); err != nil {
+		return err
+	}
 
-	fmt.Fprint(w, "JWS: ")
+	if err := writeOutput(w, []byte("JWS: ")); err != nil {
+		return err
+	}
 	if err := writeJSON(w, msg); err != nil {
 		return err
 	}
 
 	for i, sig := range msg.Signatures() {
-		fmt.Fprintf(w, "Signature %d: ", i)
+		if err := writeOutput(w, []byte(fmt.Sprintf("Signature %d: ", i))); err != nil {
+			return err
+		}
 		if err := writeJSON(w, sig.ProtectedHeaders()); err != nil {
 			return err
 		}
@@ -182,8 +187,14 @@ func newJWSSigner(cmd *cobra.Command, args []string) (*jwsSigner, error) {
 func (j *jwsSigner) valid() error {
 	validate := validator.New()
 	if err := validate.Struct(j); err != nil {
+		// Struct returns ValidationErrors for a failed tag and another error
+		// (InvalidValidationError) for a value it cannot validate at all.
+		var fields validator.ValidationErrors
+		if !errors.As(err, &fields) {
+			return err
+		}
 		var e error
-		for _, v := range err.(validator.ValidationErrors) {
+		for _, v := range fields {
 			filedName := v.Field()
 
 			switch filedName {
@@ -213,7 +224,7 @@ func runJWSSign(cmd *cobra.Command, args []string) error {
 	return jwsSigner.signer()
 }
 
-func (j *jwsSigner) signer() error {
+func (j *jwsSigner) signer() (err error) {
 	buf, err := readInput(j.InputFilePath)
 	if err != nil {
 		return err
@@ -253,9 +264,7 @@ func (j *jwsSigner) signer() error {
 		}
 	}()
 
-	fmt.Fprintf(output, "%s", signed)
-
-	return nil
+	return writeOutput(output, signed)
 }
 
 func (j *jwsSigner) signOptions(alg jwa.KeyAlgorithm, key interface{}) ([]jws.SignOption, error) {
@@ -369,8 +378,14 @@ func newJWSVerifier(cmd *cobra.Command, args []string) (*jwsVerifier, error) {
 func (j *jwsVerifier) valid() error {
 	validate := validator.New()
 	if err := validate.Struct(j); err != nil {
+		// Struct returns ValidationErrors for a failed tag and another error
+		// (InvalidValidationError) for a value it cannot validate at all.
+		var fields validator.ValidationErrors
+		if !errors.As(err, &fields) {
+			return err
+		}
 		var e error
-		for _, v := range err.(validator.ValidationErrors) {
+		for _, v := range fields {
 			filedName := v.Field()
 
 			switch filedName {
@@ -439,8 +454,7 @@ func (j *jwsVerifier) writeVerifyResult(w io.Writer, jwsMessage []byte, keyset j
 		if err != nil {
 			return wrap(ErrVerifyJWSMessage, err.Error())
 		}
-		fmt.Fprintf(w, "%s", payload)
-		return nil
+		return writeOutput(w, payload)
 	}
 
 	if j.Algorithm == "" {
@@ -472,8 +486,7 @@ func (j *jwsVerifier) writeVerifyResult(w io.Writer, jwsMessage []byte, keyset j
 			lastErr = wrap(ErrVerifyJWSMessage, err.Error())
 			continue
 		}
-		fmt.Fprintf(w, "%s", payload)
-		return nil
+		return writeOutput(w, payload)
 	}
 
 	if lastErr == nil {

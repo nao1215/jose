@@ -75,27 +75,20 @@ func (j *jsonWebAlhorithm) valid() error {
 	return nil
 }
 
-func (j *jsonWebAlhorithm) writeJWA(w io.Writer) {
-	if j.keyType {
-		j.writeKeyTypes(w)
-		return
+func (j *jsonWebAlhorithm) writeJWA(w io.Writer) error {
+	switch {
+	case j.keyType:
+		return j.writeKeyTypes(w)
+	case j.elipticCurve:
+		return j.writeEllipticCurveAlgorithms(w)
+	case j.keyEncryption:
+		return j.writeKeyEncryptionAlgorithms(w)
+	case j.contentEncryption:
+		return j.writeContentEncryptionAlgorithms(w)
+	case j.signature:
+		return j.writeSignatureAlgorithms(w)
 	}
-	if j.elipticCurve {
-		j.writeEllipticCurveAlgorithms(w)
-		return
-	}
-	if j.keyEncryption {
-		j.writeKeyEncryptionAlgorithms(w)
-		return
-	}
-	if j.contentEncryption {
-		j.writeContentEncryptionAlgorithms(w)
-		return
-	}
-	if j.signature {
-		j.writeSignatureAlgorithms(w)
-		return
-	}
+	return nil
 }
 
 // stringifyAlgorithms converts a slice of jwx algorithm values into their
@@ -108,30 +101,33 @@ func stringifyAlgorithms[T fmt.Stringer](algs []T) []string {
 	return names
 }
 
-func writeLines(w io.Writer, lines []string) {
+func writeLines(w io.Writer, lines []string) error {
 	for _, line := range lines {
-		fmt.Fprintf(w, "%s\n", line)
+		if err := writeOutput(w, []byte(line+"\n")); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (j *jsonWebAlhorithm) writeKeyTypes(w io.Writer) {
-	writeLines(w, filterSupported(stringifyAlgorithms(jwa.KeyTypes()), supportedKeyTypes()))
+func (j *jsonWebAlhorithm) writeKeyTypes(w io.Writer) error {
+	return writeLines(w, filterSupported(stringifyAlgorithms(jwa.KeyTypes()), supportedKeyTypes()))
 }
 
-func (j *jsonWebAlhorithm) writeEllipticCurveAlgorithms(w io.Writer) {
-	writeLines(w, filterSupported(stringifyAlgorithms(jwa.EllipticCurveAlgorithms()), supportedEllipticCurves()))
+func (j *jsonWebAlhorithm) writeEllipticCurveAlgorithms(w io.Writer) error {
+	return writeLines(w, filterSupported(stringifyAlgorithms(jwa.EllipticCurveAlgorithms()), supportedEllipticCurves()))
 }
 
-func (j *jsonWebAlhorithm) writeKeyEncryptionAlgorithms(w io.Writer) {
-	writeLines(w, filterSupported(stringifyAlgorithms(jwa.KeyEncryptionAlgorithms()), supportedKeyEncryptionAlgorithms()))
+func (j *jsonWebAlhorithm) writeKeyEncryptionAlgorithms(w io.Writer) error {
+	return writeLines(w, filterSupported(stringifyAlgorithms(jwa.KeyEncryptionAlgorithms()), supportedKeyEncryptionAlgorithms()))
 }
 
-func (j *jsonWebAlhorithm) writeContentEncryptionAlgorithms(w io.Writer) {
-	writeLines(w, filterSupported(stringifyAlgorithms(jwa.ContentEncryptionAlgorithms()), supportedContentEncryptionAlgorithms()))
+func (j *jsonWebAlhorithm) writeContentEncryptionAlgorithms(w io.Writer) error {
+	return writeLines(w, filterSupported(stringifyAlgorithms(jwa.ContentEncryptionAlgorithms()), supportedContentEncryptionAlgorithms()))
 }
 
-func (j *jsonWebAlhorithm) writeSignatureAlgorithms(w io.Writer) {
-	writeLines(w, filterSupported(stringifyAlgorithms(jwa.SignatureAlgorithms()), supportedSignatureAlgorithms()))
+func (j *jsonWebAlhorithm) writeSignatureAlgorithms(w io.Writer) error {
+	return writeLines(w, filterSupported(stringifyAlgorithms(jwa.SignatureAlgorithms()), supportedSignatureAlgorithms()))
 }
 
 func runJWA(cmd *cobra.Command, _ []string) error {
@@ -147,6 +143,5 @@ func runJWA(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	jwa.writeJWA(os.Stdout)
-	return nil
+	return jwa.writeJWA(os.Stdout)
 }

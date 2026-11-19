@@ -3,7 +3,6 @@ package cmd
 import (
 	"compress/gzip"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -99,7 +98,9 @@ func copyManpages(manFiles []string, dst string) error {
 			}
 		}()
 
-		fmt.Println("Generate " + out.Name())
+		if err := writeOutput(os.Stdout, []byte("Generate "+out.Name()+"\n")); err != nil {
+			return err
+		}
 		_, err = io.Copy(gz, in)
 		if err != nil {
 			return err

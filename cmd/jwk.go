@@ -136,8 +136,14 @@ func newJWKGenerater(cmd *cobra.Command) (*jwkGenerater, error) {
 func (j *jwkGenerater) valid() error {
 	validate := validator.New()
 	if err := validate.Struct(j); err != nil {
+		// Struct returns ValidationErrors for a failed tag and another error
+		// (InvalidValidationError) for a value it cannot validate at all.
+		var fields validator.ValidationErrors
+		if !errors.As(err, &fields) {
+			return err
+		}
 		var e error
-		for _, v := range err.(validator.ValidationErrors) {
+		for _, v := range fields {
 			filedName := v.Field()
 
 			switch filedName {

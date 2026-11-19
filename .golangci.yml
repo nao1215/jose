@@ -4,21 +4,59 @@ linters:
   default: standard
   enable:
     - bodyclose
+    - errchkjson
+    - errorlint
     - misspell
+    - nilerr
+    - nolintlint
     - unconvert
     - whitespace
   settings:
     misspell:
       locale: US
+    errcheck:
+      check-blank: true
+      check-type-assertions: true
+      # errcheck's built-in list also skips fmt.Print/Printf/Println, which
+      # write to stdout and fail on a closed pipe or a full disk. Only calls
+      # whose documentation guarantees a nil error are exempt.
+      disable-default-exclusions: true
+      exclude-functions:
+        - (*bytes.Buffer).Write
+        - (*bytes.Buffer).WriteByte
+        - (*bytes.Buffer).WriteRune
+        - (*bytes.Buffer).WriteString
+        - (*strings.Builder).Write
+        - (*strings.Builder).WriteByte
+        - (*strings.Builder).WriteRune
+        - (*strings.Builder).WriteString
+        - (hash.Hash).Write
+        - fmt.Fprint(*bytes.Buffer)
+        - fmt.Fprintf(*bytes.Buffer)
+        - fmt.Fprintln(*bytes.Buffer)
+        - fmt.Fprint(*strings.Builder)
+        - fmt.Fprintf(*strings.Builder)
+        - fmt.Fprintln(*strings.Builder)
+    errorlint:
+      errorf: true
+      asserts: true
+      comparison: true
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+      allow-unused: false
   exclusions:
-    presets:
-      - std-error-handling
+    # No presets: "std-error-handling" hides ignored Close and Print errors.
     rules:
-      # Test helpers use math/rand for reproducible data and read into buffers;
-      # neither is a security concern in tests.
+      # Test helpers read into buffers and build throwaway inputs; that is
+      # not a security concern in tests.
       - path: _test\.go
         linters:
           - gosec
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
 
 formatters:
   enable:
