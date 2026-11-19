@@ -86,7 +86,7 @@ on the reference page.
 GitHub Actions runs the following workflows, and every gate is reproducible
 locally with the `make` targets above:
 
-- `unit_test.yml`: run `go test -race ./...` on Linux, macOS, and Windows with the go.mod floor and the newest Go (`make test`)
+- `unit_test.yml`: run `GOEXPERIMENT=jsonv2 go test -race -count=1 ./...` on Linux, macOS, and Windows with the go.mod floor and the newest Go (`make test` runs the same tests without the race detector and writes the coverage report)
 - `gitleaks.yml`: scan pull requests and pushes to main for committed secrets
 - `e2e_test.yml`: run the atago end-to-end tests on Linux, macOS, and Windows (`make e2e`)
 - `website.yml`: build the website and, on main, publish it to GitHub Pages and check the live pages (`make website`)
