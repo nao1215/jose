@@ -7,6 +7,10 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ## [Unreleased]
 
+### Removed
+
+- The `github.com/nao1215/jose/cmd` package moved to `internal/cmd`. It was the CLI's implementation, with only `Execute`, `Version`, `Name` and the error values exported; pkg.go.dev listed no importers (2026-11-19). The `jose` command is unchanged.
+
 ### Fixed
 
 - `jose jws sign`, `jws verify`, `jws parse`, `jwe encrypt`, `jwe decrypt`, `jwa`, `version`, `man` and `bug-report` exit 1 with "failed to write output" when their output cannot be written (a closed pipe, a full disk). They used to exit 0 with nothing written. A failure to close the input file is reported too.

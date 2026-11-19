@@ -14,7 +14,7 @@ GO_INSTALL  = $(GO) install
 GOOS        = ""
 GOARCH      = ""
 GO_PKGROOT  = ./...
-GO_LDFLAGS  = -ldflags '-X github.com/nao1215/jose/cmd.Version=$(VERSION)'
+GO_LDFLAGS  = -ldflags '-X github.com/nao1215/jose/internal/cmd.Version=$(VERSION)'
 
 build: ## Build binary
 	env GO111MODULE=on GOOS=$(GOOS) GOARCH=$(GOARCH) $(GO_BUILD) $(GO_LDFLAGS) -o $(APP) main.go
@@ -36,7 +36,7 @@ FUZZ_TIME ?= 20s
 test-fuzz: ## Run each fuzz target for FUZZ_TIME (default 20s)
 	@for fz in FuzzJWSParse FuzzJWSVerify FuzzJWEDecrypt FuzzGetKeyFile FuzzSignOptionsHeader; do \
 		echo "== $$fz =="; \
-		$(GO_TEST) ./cmd/ -run="^$$fz$$" -fuzz="^$$fz$$" -fuzztime=$(FUZZ_TIME) || exit 1; \
+		$(GO_TEST) ./internal/cmd/ -run="^$$fz$$" -fuzz="^$$fz$$" -fuzztime=$(FUZZ_TIME) || exit 1; \
 	done
 
 lint: ## Run golangci-lint

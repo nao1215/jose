@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/lestrrat-go/jwx/v4/jwk"
@@ -126,4 +127,14 @@ func captureStdout(t *testing.T, fn func()) string {
 		t.Fatal(err)
 	}
 	return buf.String()
+}
+
+// chop drops the trailing line feeds (and a carriage return before them) of
+// captured command output.
+func chop(s string) string {
+	s = strings.TrimRight(s, "\n")
+	if strings.HasSuffix(s, "\r") {
+		s = strings.TrimRight(s, "\r")
+	}
+	return s
 }

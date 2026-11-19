@@ -1,6 +1,6 @@
 # The shell blocks and the behavior claims of README.md and the website pages
 # other than the cookbook (website/content/_index.md and reference.md). TestSite* in
-# cmd/docs_test.go fails when a shell block on those pages is not run here,
+# internal/cmd/docs_test.go fails when a shell block on those pages is not run here,
 # character for character, as a `shell: true` command. The install page is
 # left out on purpose: its commands install software on the host.
 version: "1"

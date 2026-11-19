@@ -248,11 +248,3 @@ func writeOutput(w io.Writer, b []byte) error {
 	}
 	return nil
 }
-
-func chop(s string) string {
-	s = strings.TrimRight(s, "\n")
-	if strings.HasSuffix(s, "\r") {
-		s = strings.TrimRight(s, "\r")
-	}
-	return s
-}

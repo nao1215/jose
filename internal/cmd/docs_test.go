@@ -22,9 +22,9 @@ import (
 // binary has.
 
 const (
-	cookbookPath     = "../doc/cookbook.md"
-	cookbookSpecPath = "../e2e/atago/cookbook.atago.yaml"
-	referencePath    = "../website/content/reference.md"
+	cookbookPath     = "../../doc/cookbook.md"
+	cookbookSpecPath = "../../e2e/atago/cookbook.atago.yaml"
+	referencePath    = "../../website/content/reference.md"
 	cookbookIndex    = "Find a recipe by task"
 )
 
@@ -373,7 +373,7 @@ func TestSiteShellBlocksAreRun(t *testing.T) {
 	t.Parallel()
 
 	var spec cookbookSpec
-	if err := yaml.Unmarshal([]byte(readDoc(t, "../e2e/atago/site.atago.yaml")), &spec); err != nil {
+	if err := yaml.Unmarshal([]byte(readDoc(t, "../../e2e/atago/site.atago.yaml")), &spec); err != nil {
 		t.Fatal(err)
 	}
 	run := map[string]bool{}
@@ -385,7 +385,7 @@ func TestSiteShellBlocksAreRun(t *testing.T) {
 		}
 	}
 
-	for _, page := range []string{"../README.md", "../website/content/_index.md", referencePath} {
+	for _, page := range []string{"../../README.md", "../../website/content/_index.md", referencePath} {
 		blocks := fencedBlocks(readDoc(t, page), "shell")
 		if len(blocks) == 0 {
 			t.Errorf("%s has no shell block; drop it from this test or add one", page)
