@@ -1,0 +1,130 @@
+# Snapshot tests: these pin the whole output of the commands whose output is
+# fully determined by their input, so an unintended change to the algorithm
+# lists, the JSON layout of a key, or a signature fails with a diff. The keys
+# are fixed fixtures (test keys, not secrets). EdDSA and HMAC signatures are
+# deterministic, so the same key and payload always give the same token.
+#
+# Record or refresh the snapshots after an intended output change with:
+#   atago snapshot update e2e/atago/snapshot.atago.yaml
+# Run with: make e2e   (or e2e/run.sh)
+version: "1"
+
+suite:
+  name: jose output snapshots
+
+scenarios:
+  - name: jwa lists every algorithm and type exactly
+    steps:
+      - run:
+          command: jose jwa --signature
+      - assert:
+          exit_code: 0
+          stdout:
+            snapshot: snapshots/jwa_signature.txt
+      - run:
+          command: jose jwa --key-encryption
+      - assert:
+          exit_code: 0
+          stdout:
+            snapshot: snapshots/jwa_key_encryption.txt
+      - run:
+          command: jose jwa --content-encryption
+      - assert:
+          exit_code: 0
+          stdout:
+            snapshot: snapshots/jwa_content_encryption.txt
+      - run:
+          command: jose jwa --key-type
+      - assert:
+          exit_code: 0
+          stdout:
+            snapshot: snapshots/jwa_key_type.txt
+      - run:
+          command: jose jwa --elliptic-curve
+      - assert:
+          exit_code: 0
+          stdout:
+            snapshot: snapshots/jwa_elliptic_curve.txt
+
+  - name: jwk public writes the public half of a key exactly
+    steps:
+      - &eckey
+        fixture:
+          file: ec.jwk
+          content: |
+            {
+                "crv": "P-256",
+                "d": "R3Wu0WIeGnI_8yOvUlFDCCQC2tIQde69KUkxa6dAdDU",
+                "kid": "ec-1",
+                "kty": "EC",
+                "x": "PIWr1r2ujhPW0NNzARuaOgosD3XC5bCJ6NlmESNlT1w",
+                "y": "BiQvUGcVBXxJRIJtny0lvv3lABds91UHO8FavTbVta0"
+            }
+      - &edkey
+        fixture:
+          file: ed.jwk
+          content: |
+            {
+                "alg": "EdDSA",
+                "crv": "Ed25519",
+                "d": "3itvOunYPEnK6kBKOjAseTOGaaRE4psXxXFn1umb3_k",
+                "kid": "ed-1",
+                "kty": "OKP",
+                "use": "sig",
+                "x": "49QpHCqfcglc1V9hahuxeL-Tn6KAzRghauo7TAThkj0"
+            }
+      - run:
+          command: jose jwk public ec.jwk
+      - assert:
+          exit_code: 0
+          stdout:
+            snapshot: snapshots/jwk_public_ec.json
+      - run:
+          command: jose jwk public --set ec.jwk ed.jwk
+      - assert:
+          exit_code: 0
+          stdout:
+            snapshot: snapshots/jwk_public_set.json
+
+  - name: jws sign writes the same deterministic token for the same key and payload
+    steps:
+      - *edkey
+      - &octkey
+        fixture:
+          file: oct.jwk
+          content: |
+            {
+                "alg": "HS256",
+                "k": "dZlL9jULYtqyqYWC6Rpv-HH_JHrmjNz_kw2BNfQHsvo",
+                "kid": "hs-1",
+                "kty": "oct"
+            }
+      - &payload
+        fixture:
+          file: payload.json
+          content: '{"sub":"alice"}'
+      - run:
+          command: jose jws sign --algorithm EdDSA --key ed.jwk payload.json
+      - assert:
+          exit_code: 0
+          stdout:
+            snapshot: snapshots/jws_sign_eddsa.txt
+      - run:
+          command: jose jws sign --algorithm HS256 --key oct.jwk --header '{"kid":"hs-1","typ":"JWT"}' payload.json
+      - assert:
+          exit_code: 0
+          stdout:
+            snapshot: snapshots/jws_sign_hs256_header.txt
+
+  - name: jws parse --all prints the payload, the message and the headers exactly
+    steps:
+      - *octkey
+      - *payload
+      - run:
+          command: jose jws sign --algorithm HS256 --key oct.jwk --header '{"kid":"hs-1","typ":"JWT"}' --output token.jws payload.json
+      - run:
+          command: jose jws parse --all token.jws
+      - assert:
+          exit_code: 0
+          stdout:
+            snapshot: snapshots/jws_parse_all.txt

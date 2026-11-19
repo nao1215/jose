@@ -257,6 +257,44 @@ func TestPrintAllWriteError(t *testing.T) {
 	}
 }
 
+// failAfterWriter accepts n writes and fails every write after them.
+type failAfterWriter struct{ n int }
+
+func (w *failAfterWriter) Write(p []byte) (int, error) {
+	if w.n == 0 {
+		return 0, errors.New("boom")
+	}
+	w.n--
+	return len(p), nil
+}
+
+// printAll writes in several pieces; a failure at any one of them, not only
+// the first, must be returned.
+func TestPrintAllReportsAWriteThatFailsPartWay(t *testing.T) {
+	t.Parallel()
+	msg, err := jws.Parse([]byte(sampleJWS))
+	if err != nil {
+		t.Fatalf("parse sample JWS: %v", err)
+	}
+	var full countingWriter
+	if err := printAll(&full, msg); err != nil {
+		t.Fatal(err)
+	}
+	for n := 0; n < full.writes; n++ {
+		if err := printAll(&failAfterWriter{n: n}, msg); err == nil {
+			t.Errorf("printAll returned nil when write %d of %d failed", n+1, full.writes)
+		}
+	}
+}
+
+// countingWriter counts the writes it receives.
+type countingWriter struct{ writes int }
+
+func (w *countingWriter) Write(p []byte) (int, error) {
+	w.writes++
+	return len(p), nil
+}
+
 func TestAVerifiedPayloadThatCannotBeWrittenIsAnError(t *testing.T) {
 	t.Parallel()
 	keyPath := octKeyFileWithKid(t, "HS256", "k1")

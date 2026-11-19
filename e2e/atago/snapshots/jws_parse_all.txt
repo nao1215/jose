@@ -1,0 +1,11 @@
+Payload: {"sub":"alice"}
+JWS: {
+    "payload": "eyJzdWIiOiJhbGljZSJ9",
+    "protected": "eyJhbGciOiJIUzI1NiIsImtpZCI6ImhzLTEiLCJ0eXAiOiJKV1QifQ",
+    "signature": "ciZ4RPFAwDPq6m6YVYDkHF39TqZMmXMYifv_s5ZkRt8"
+}
+Signature 0: {
+    "alg": "HS256",
+    "kid": "hs-1",
+    "typ": "JWT"
+}
