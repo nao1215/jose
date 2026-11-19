@@ -4,6 +4,7 @@ import (
 	"crypto/elliptic"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -65,13 +66,15 @@ func openInputFile(path string) (io.ReadCloser, error) {
 // readInput reads all bytes from the input named by path. path may be a file
 // path, "-" for stdin, or empty to read piped stdin. It is the payload/message
 // reader shared by sign, encrypt, and decrypt.
-func readInput(path string) ([]byte, error) {
+func readInput(path string) (_ []byte, err error) {
 	src, err := openInputFile(path)
 	if err != nil {
 		return nil, err
 	}
 	defer func() {
-		_ = src.Close()
+		if e := src.Close(); e != nil {
+			err = errors.Join(err, wrap(ErrReadFile, e.Error()))
+		}
 	}()
 
 	data, err := io.ReadAll(src)
@@ -234,6 +237,16 @@ func parseKeySet(data []byte, format string) (jwk.Set, error) {
 		return nil, wrap(ErrParseKey, err.Error())
 	}
 	return keySet, nil
+}
+
+// writeOutput writes the result of a command to w. A failed write (a closed
+// pipe, a full disk) is returned so the command exits non-zero instead of
+// reporting success for output that never arrived.
+func writeOutput(w io.Writer, b []byte) error {
+	if _, err := w.Write(b); err != nil {
+		return wrap(ErrWriteOutput, err.Error())
+	}
+	return nil
 }
 
 func chop(s string) string {

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"runtime/debug"
 
 	"github.com/spf13/cobra"
@@ -14,9 +15,9 @@ var (
 	// through resolveVersion, so a write from one parallel test races every
 	// other parallel test that builds a command. Prefer passing the version to
 	// the function under test, the way bugReportBody takes it.
-	Version string //nolint
+	Version string
 	// Name is cli command name
-	Name = "jose" //nolint
+	Name = "jose"
 )
 
 // resolveVersion returns the jose version string, preferring the value set by
@@ -39,14 +40,14 @@ func versionLine() string {
 
 // getVersion return jose command version.
 // Version global variable is set by ldflags.
-func getVersion(_ *cobra.Command, _ []string) {
-	fmt.Println(versionLine())
+func getVersion(_ *cobra.Command, _ []string) error {
+	return writeOutput(os.Stdout, []byte(versionLine()+"\n"))
 }
 
 func newVersionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
 		Short: "Show " + Name + " command version information",
-		Run:   getVersion,
+		RunE:  getVersion,
 	}
 }

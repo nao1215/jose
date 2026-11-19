@@ -36,7 +36,9 @@ func TestJWAOnlyListsSupportedSignatures(t *testing.T) {
 
 	j := &jsonWebAlhorithm{signature: true}
 	var buf bytes.Buffer
-	j.writeSignatureAlgorithms(&buf)
+	if err := j.writeSignatureAlgorithms(&buf); err != nil {
+		t.Fatal(err)
+	}
 	lines := linesOf(buf.String())
 
 	for _, bad := range []string{"Ed25519", "none"} {
@@ -67,7 +69,9 @@ func TestJWAOnlyListsSupportedCurves(t *testing.T) {
 
 	j := &jsonWebAlhorithm{elipticCurve: true}
 	var buf bytes.Buffer
-	j.writeEllipticCurveAlgorithms(&buf)
+	if err := j.writeEllipticCurveAlgorithms(&buf); err != nil {
+		t.Fatal(err)
+	}
 	lines := linesOf(buf.String())
 
 	if hasLine(lines, "X448") {
@@ -88,7 +92,9 @@ func TestJWAOnlyListsSupportedKeyEncryption(t *testing.T) {
 
 	j := &jsonWebAlhorithm{keyEncryption: true}
 	var buf bytes.Buffer
-	j.writeKeyEncryptionAlgorithms(&buf)
+	if err := j.writeKeyEncryptionAlgorithms(&buf); err != nil {
+		t.Fatal(err)
+	}
 	lines := linesOf(buf.String())
 
 	for _, bad := range []string{"RSA-OAEP-384", "RSA-OAEP-512", "HPKE-0-KE"} {
@@ -115,7 +121,9 @@ func TestJWAOnlyListsSupportedKeyTypes(t *testing.T) {
 
 	j := &jsonWebAlhorithm{keyType: true}
 	var buf bytes.Buffer
-	j.writeKeyTypes(&buf)
+	if err := j.writeKeyTypes(&buf); err != nil {
+		t.Fatal(err)
+	}
 	lines := linesOf(buf.String())
 
 	if hasLine(lines, "AKP") {

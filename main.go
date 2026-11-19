@@ -8,7 +8,7 @@ import (
 )
 
 // osExit is wrapper for  os.Exit(). It's for unit test.
-var osExit = os.Exit //nolint
+var osExit = os.Exit
 
 func main() {
 	osExit(cmd.Execute())

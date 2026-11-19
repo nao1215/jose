@@ -252,8 +252,39 @@ func TestPrintAllWriteError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse sample JWS: %v", err)
 	}
-	if err := printAll(failingWriter{}, msg); err == nil {
-		t.Error("printAll should fail when the writer fails")
+	if err := printAll(failingWriter{}, msg); !errors.Is(err, ErrWriteOutput) {
+		t.Errorf("printAll to a failing writer returned %v, want ErrWriteOutput", err)
+	}
+}
+
+func TestAVerifiedPayloadThatCannotBeWrittenIsAnError(t *testing.T) {
+	t.Parallel()
+	keyPath := octKeyFileWithKid(t, "HS256", "k1")
+	keyset, err := getKeyFile(keyPath, "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	token := signWith(t, keyPath, "HS256", writeFile(t, "payload.txt", "hello"), `{"kid":"k1"}`)
+
+	for _, v := range []*jwsVerifier{{Algorithm: "HS256"}, {MatchKeyID: true}} {
+		if err := v.writeVerifyResult(failingWriter{}, []byte(token), keyset); !errors.Is(err, ErrWriteOutput) {
+			t.Errorf("verify (match-kid %v) to a failing writer returned %v, want ErrWriteOutput", v.MatchKeyID, err)
+		}
+	}
+}
+
+func TestAnAlgorithmListThatCannotBeWrittenIsAnError(t *testing.T) {
+	t.Parallel()
+	for name, j := range map[string]*jsonWebAlhorithm{
+		"key-type":           {keyType: true},
+		"elliptic-curve":     {elipticCurve: true},
+		"key-encryption":     {keyEncryption: true},
+		"content-encryption": {contentEncryption: true},
+		"signature":          {signature: true},
+	} {
+		if err := j.writeJWA(failingWriter{}); !errors.Is(err, ErrWriteOutput) {
+			t.Errorf("jwa --%s to a failing writer returned %v, want ErrWriteOutput", name, err)
+		}
 	}
 }
 

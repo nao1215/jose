@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/url"
+	"os"
 	"runtime"
 
 	"github.com/spf13/cobra"
@@ -21,7 +22,7 @@ stdout so you can paste it into a new issue by hand.`,
 	}
 }
 
-var openBrowserFunc = openBrowser //nolint
+var openBrowserFunc = openBrowser
 
 // bugReportBody builds the Markdown issue body, including the runtime details
 // that make a report actionable.
@@ -49,8 +50,7 @@ func bugReport(_ *cobra.Command, _ []string) error {
 	target := "https://github.com/nao1215/jose/issues/new?title=[Bug Report] Title&body=" + url.QueryEscape(body)
 
 	if !openBrowserFunc(target) {
-		fmt.Print("Please file a new issue at https://github.com/nao1215/jose/issues/new using this template:\n\n")
-		fmt.Print(body)
+		return writeOutput(os.Stdout, []byte("Please file a new issue at https://github.com/nao1215/jose/issues/new using this template:\n\n"+body))
 	}
 	return nil
 }

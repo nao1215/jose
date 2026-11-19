@@ -100,8 +100,14 @@ func newJWEEncrypter(cmd *cobra.Command, args []string) (*jweEncrypter, error) {
 func (j *jweEncrypter) valid() error {
 	validate := validator.New()
 	if err := validate.Struct(j); err != nil {
+		// Struct returns ValidationErrors for a failed tag and another error
+		// (InvalidValidationError) for a value it cannot validate at all.
+		var fields validator.ValidationErrors
+		if !errors.As(err, &fields) {
+			return err
+		}
 		var e error
-		for _, v := range err.(validator.ValidationErrors) {
+		for _, v := range fields {
 			filedName := v.Field()
 
 			switch filedName {
@@ -131,7 +137,7 @@ func runJWEEncrypt(cmd *cobra.Command, args []string) error {
 	return j.encrypt()
 }
 
-func (j *jweEncrypter) encrypt() error {
+func (j *jweEncrypter) encrypt() (err error) {
 	buf, err := readInput(j.InputFilePath)
 	if err != nil {
 		return err
@@ -181,8 +187,7 @@ func (j *jweEncrypter) encrypt() error {
 		}
 	}()
 
-	fmt.Fprintf(output, "%s", encrypted)
-	return nil
+	return writeOutput(output, encrypted)
 }
 
 func newJWEDecryptCmd() *cobra.Command {
@@ -246,8 +251,14 @@ func newJWEDecrypter(cmd *cobra.Command, args []string) (*jweDecrypter, error) {
 func (j *jweDecrypter) valid() error {
 	validate := validator.New()
 	if err := validate.Struct(j); err != nil {
+		// Struct returns ValidationErrors for a failed tag and another error
+		// (InvalidValidationError) for a value it cannot validate at all.
+		var fields validator.ValidationErrors
+		if !errors.As(err, &fields) {
+			return err
+		}
 		var e error
-		for _, v := range err.(validator.ValidationErrors) {
+		for _, v := range fields {
 			filedName := v.Field()
 
 			switch filedName {
@@ -276,7 +287,7 @@ func runJWEDecrypt(cmd *cobra.Command, args []string) error {
 	return j.decrypt()
 }
 
-func (j *jweDecrypter) decrypt() error {
+func (j *jweDecrypter) decrypt() (err error) {
 	buf, err := readInput(j.InputFilePath)
 	if err != nil {
 		return err
@@ -306,8 +317,7 @@ func (j *jweDecrypter) decrypt() error {
 		}
 	}()
 
-	fmt.Fprintf(output, "%s", decrypted)
-	return nil
+	return writeOutput(output, decrypted)
 }
 
 func (j *jweDecrypter) decryptMessage(input []byte, key jwk.Key) ([]byte, error) {
