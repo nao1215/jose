@@ -7,6 +7,8 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-19
+
 ### Removed
 
 - The `github.com/nao1215/jose/cmd` package moved to `internal/cmd`. It was the CLI's implementation, with only `Execute`, `Version`, `Name` and the error values exported; pkg.go.dev listed no importers (2026-11-19). The `jose` command is unchanged.
@@ -239,7 +241,8 @@ defaults explicit, and adds a thorough test suite.
 Pre-review development releases (0.0.1 through 0.0.8). See the git history and
 the [release page](https://github.com/nao1215/jose/releases) for details.
 
-[Unreleased]: https://github.com/nao1215/jose/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/nao1215/jose/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/nao1215/jose/compare/v0.4.3...v0.5.0
 [0.4.3]: https://github.com/nao1215/jose/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/nao1215/jose/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/nao1215/jose/compare/v0.4.0...v0.4.1
