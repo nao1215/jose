@@ -1,0 +1,3 @@
+# Snapshots are compared byte for byte with what jose prints, which uses LF on
+# every platform. Keep Git from rewriting them to CRLF on Windows.
+e2e/atago/snapshots/** -text

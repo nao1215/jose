@@ -106,7 +106,9 @@ specs under `e2e/atago/`), and `cmd/docs_test.go` fails when a block is not.
 | [Property-based tests](cmd/property_test.go) | Sign/verify and encrypt/decrypt round trips that fail for some payload, and inline tokens mistaken for file names |
 | [Metamorphic tests](cmd/metamorphic_test.go) | Input paths (file, `-`, pipe, inline token) or private and public keys that give different results |
 | [Differential tests](cmd/differential_test.go) | Signatures, ciphertexts and JWKs that another JOSE implementation (go-jose) does not accept |
+| [Snapshot tests](e2e/atago/snapshot.atago.yaml) | Unintended changes to the algorithm lists, the JSON layout of a key, or a deterministic signature |
 | [Fuzzing](cmd/fuzz_test.go) | Panics on malformed tokens, key files and `--header` values |
+| [Mutation testing](.github/workflows/mutation.yml) | Tests that run changed code without checking its result |
 | [Benchmarks](bench) | Slower key generation, signing and encryption, measured against the base of each pull request |
 
 The commands and CI jobs for each are in [doc/testing.md](doc/testing.md).

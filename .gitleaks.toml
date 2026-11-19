@@ -1,0 +1,11 @@
+# gitleaks configuration. The default rules apply; the allowlist below only
+# covers the e2e snapshots, which are JWS tokens jose signs with the throwaway
+# test keys in e2e/atago/snapshot.atago.yaml. They are compared byte for byte,
+# so they cannot be masked. ([allowlist] rather than [[allowlists]], which
+# gitleaks 8.24 used by gitleaks-action does not read.)
+[extend]
+useDefault = true
+
+[allowlist]
+description = "JWS tokens in the e2e snapshots, signed with test keys"
+paths = ['''^e2e/atago/snapshots/jws_sign_[a-z0-9_]+\.txt$''']
