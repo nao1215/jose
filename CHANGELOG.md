@@ -17,6 +17,7 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 - CI scans the repository with gosec and Trivy on every pull request (Trivy covers dependency vulnerabilities, committed secrets and misconfigurations, and also runs daily). Workflow actions are recorded in `.github/workflows/actions.lock`, which CI verifies against the pinned commits.
 - CI scans pull requests and pushes to main for committed secrets with gitleaks. The Linux, macOS and Windows unit test workflows are one `unit_test.yml` matrix, which now runs the race detector on Linux too. CI pins atago v0.26.3 and himorime v0.6.1.
 - Dependencies: charmbracelet/x/ansi v0.11.10, xo/terminfo v1.3.1.
+- Tests compare jose with go-jose, a second JOSE implementation: each verifies what the other signs and decrypts what the other encrypts. The round-trip properties draw their payloads with rapid. go-jose and rapid are test-only dependencies.
 
 ## [0.4.3] - 2026-11-09
 

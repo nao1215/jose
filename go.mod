@@ -4,6 +4,7 @@ go 1.26.10
 
 require (
 	github.com/charmbracelet/log v1.0.0
+	github.com/go-jose/go-jose/v4 v4.1.9
 	github.com/go-playground/validator/v10 v10.30.6
 	github.com/google/go-cmp v0.7.0
 	github.com/lestrrat-go/jwx/v4 v4.6.0
@@ -11,6 +12,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.1.0
 	go.yaml.in/yaml/v3 v3.0.6
+	pgregory.net/rapid v1.3.0
 )
 
 require (

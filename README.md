@@ -97,6 +97,20 @@ The shell blocks in this README, on the website, and in the cookbook, apart
 from the install commands, are run word for word by the end-to-end suite ([atago](https://github.com/nao1215/atago)
 specs under `e2e/atago/`), and `cmd/docs_test.go` fails when a block is not.
 
+## Testing
+
+| Technique | Bug class caught here |
+|---|---|
+| [Unit tests](cmd) | Wrong flag handling, key parameters and errors on Linux, macOS and Windows |
+| [End-to-end tests](e2e/atago) | Changed output and exit codes of the real `jose` binary, and README or cookbook commands that stopped working |
+| [Property-based tests](cmd/property_test.go) | Sign/verify and encrypt/decrypt round trips that fail for some payload, and inline tokens mistaken for file names |
+| [Metamorphic tests](cmd/metamorphic_test.go) | Input paths (file, `-`, pipe, inline token) or private and public keys that give different results |
+| [Differential tests](cmd/differential_test.go) | Signatures, ciphertexts and JWKs that another JOSE implementation (go-jose) does not accept |
+| [Fuzzing](cmd/fuzz_test.go) | Panics on malformed tokens, key files and `--header` values |
+| [Benchmarks](bench) | Slower key generation, signing and encryption, measured against the base of each pull request |
+
+The commands and CI jobs for each are in [doc/testing.md](doc/testing.md).
+
 ## Contributing
 
 Contributions are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the
