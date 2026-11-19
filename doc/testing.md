@@ -4,13 +4,13 @@ How jose is tested, the command that runs each kind of test locally, and the CI 
 
 | Technique | Files | Local command | CI |
 |---|---|---|---|
-| Unit tests | `cmd/*_test.go` | `make test` | `unit_test.yml` (Linux, macOS, Windows; Go 1.26.10 and stable; race detector) |
+| Unit tests | `internal/cmd/*_test.go` | `make test` | `unit_test.yml` (Linux, macOS, Windows; Go 1.26.10 and stable; race detector) |
 | End-to-end tests | `e2e/atago/*.atago.yaml` | `make e2e` | `e2e_test.yml` (Linux, macOS, Windows) |
-| Property-based tests | `cmd/property_test.go` | `go test -run Property ./cmd` | `unit_test.yml` |
-| Metamorphic tests | `cmd/metamorphic_test.go` | `go test -run Metamorphic ./cmd` | `unit_test.yml` |
-| Differential tests | `cmd/differential_test.go` | `go test -run Differential ./cmd` | `unit_test.yml` |
+| Property-based tests | `internal/cmd/property_test.go` | `go test -run Property ./internal/cmd` | `unit_test.yml` |
+| Metamorphic tests | `internal/cmd/metamorphic_test.go` | `go test -run Metamorphic ./internal/cmd` | `unit_test.yml` |
+| Differential tests | `internal/cmd/differential_test.go` | `go test -run Differential ./internal/cmd` | `unit_test.yml` |
 | Snapshot tests | `e2e/atago/snapshot.atago.yaml`, `e2e/atago/snapshots/` | `make e2e` (`atago snapshot update e2e/atago/snapshot.atago.yaml` rewrites them) | `e2e_test.yml` |
-| Fuzzing | `cmd/fuzz_test.go`, `cmd/testdata/fuzz/` | `make test-fuzz FUZZ_TIME=1m` | `fuzz.yml` (20s per target on pull requests, 5m nightly) |
+| Fuzzing | `internal/cmd/fuzz_test.go`, `internal/cmd/testdata/fuzz/` | `make test-fuzz FUZZ_TIME=1m` | `fuzz.yml` (20s per target on pull requests, 5m nightly) |
 | Mutation testing | `.github/workflows/mutation.yml` | `GOEXPERIMENT=jsonv2 gremlins unleash --workers 2 .` | `mutation.yml` (lines a pull request changes; every package weekly) |
 | Benchmarks | `bench/himorime.yaml` | `make bench`, `make bench-compare` | `bench.yml` (`himorime ci` against the base of the pull request) |
 
@@ -18,7 +18,7 @@ Go 1.26 needs `GOEXPERIMENT=jsonv2` for jwx v4. The make targets set it; set it 
 
 ## Property-based tests
 
-The properties use [rapid](https://pkg.go.dev/pgregory.net/rapid). Each one draws 100 inputs per run with a new seed. A failure is shrunk to a small input and prints the seed; `go test -run <Name> ./cmd -rapid.seed=<seed>` replays it, and `-rapid.checks=10000` searches longer.
+The properties use [rapid](https://pkg.go.dev/pgregory.net/rapid). Each one draws 100 inputs per run with a new seed. A failure is shrunk to a small input and prints the seed; `go test -run <Name> ./internal/cmd -rapid.seed=<seed>` replays it, and `-rapid.checks=10000` searches longer.
 
 - Signing then verifying, and encrypting then decrypting, returns the payload for every key type jose generates.
 - A token jose signs is recognized as an inline token (`looksLikeCompactJWS`), so `jose jws verify <token>` never reads it as a file name. Three base64url segments are a token only when the first one decodes to JSON.

@@ -3,7 +3,7 @@
 # copies off the site cannot silently stop working.
 #
 # Every scenario name starts with the "## " section title it comes from,
-# followed by ": ". TestCookbook* in cmd/docs_test.go reads both files and
+# followed by ": ". TestCookbook* in internal/cmd/docs_test.go reads both files and
 # fails when a section has no scenario here, when a scenario names a section the
 # cookbook no longer has, or when a ```shell block of a section is not run,
 # character for character, as a `shell: true` command by one of its scenarios.

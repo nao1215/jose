@@ -36,24 +36,24 @@ make website    # build the documentation website into website/public (needs hug
 
 ### Tests
 
-- Unit tests live next to the code under `cmd/`. They cover the normal paths,
+- Unit tests live next to the code under `internal/cmd/`. They cover the normal paths,
   error paths, and regressions for every command.
-- Property-based tests (`cmd/property_test.go`) assert invariants across all
+- Property-based tests (`internal/cmd/property_test.go`) assert invariants across all
   supported algorithms: generated keys always parse, public keys carry no
   private material, and sign/verify and encrypt/decrypt always round-trip.
-- Metamorphic tests (`cmd/metamorphic_test.go`) assert that different routes to
+- Metamorphic tests (`internal/cmd/metamorphic_test.go`) assert that different routes to
   the same result agree: file, stdin, and argument inputs parse alike; private
   and derived public keys verify alike; re-encrypting the same plaintext yields
   different ciphertext that decrypts back the same; and repeatedly overwriting
   an output file always leaves a parseable file.
-- Fuzz tests (`cmd/fuzz_test.go`) feed arbitrary bytes into the parsing paths
+- Fuzz tests (`internal/cmd/fuzz_test.go`) feed arbitrary bytes into the parsing paths
   (`jws parse`, `jws verify`, `jwe decrypt`, `getKeyFile`, header JSON) and
   require that jose never panics.
 
 Run a single fuzz target for longer locally with, for example:
 
 ```bash
-go test ./cmd/ -run='^$' -fuzz=FuzzJWSParse -fuzztime=2m
+go test ./internal/cmd/ -run='^$' -fuzz=FuzzJWSParse -fuzztime=2m
 ```
 
 ### End-to-end tests
@@ -70,7 +70,7 @@ Every shell block in the cookbook must be run word for word by a scenario in
 `e2e/atago/cookbook.atago.yaml` whose name starts with the section title and
 ": ", and every shell block in README.md, `website/content/_index.md`, and
 `website/content/reference.md` by `e2e/atago/site.atago.yaml`.
-`cmd/docs_test.go` enforces this, so when you change a recipe, change the
+`internal/cmd/docs_test.go` enforces this, so when you change a recipe, change the
 scenario with it. A new flag also needs a row in the flag table of its command
 on the reference page.
 

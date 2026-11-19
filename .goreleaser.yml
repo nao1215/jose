@@ -12,7 +12,7 @@ before:
 builds:
   - main: .
     ldflags:
-      - -s -w -X 'github.com/nao1215/jose/cmd.Version=v{{ .Version }}'
+      - -s -w -X 'github.com/nao1215/jose/internal/cmd.Version=v{{ .Version }}'
     env:
       - CGO_ENABLED=0
       # jwx v4 uses encoding/json/v2, gated behind this experiment on Go 1.26.

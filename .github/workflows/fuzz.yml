@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     # One target per job, so the run takes as long as one target instead of
     # the five in a row. Keep the list in step with the Fuzz functions in
-    # cmd/fuzz_test.go and with `make test-fuzz`.
+    # internal/cmd/fuzz_test.go and with `make test-fuzz`.
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -66,7 +66,7 @@ jobs:
         env:
           FUZZTIME: ${{ inputs.fuzztime || (github.event_name == 'schedule' && '5m') || '20s' }}
           TARGET: ${{ matrix.target }}
-        run: go test ./cmd/ -run="^${TARGET}$" -fuzz="^${TARGET}$" -fuzztime="$FUZZTIME"
+        run: go test ./internal/cmd/ -run="^${TARGET}$" -fuzz="^${TARGET}$" -fuzztime="$FUZZTIME"
 
       # A failing input is written under testdata/fuzz/<Name>/. Download it,
       # commit it next to the target, and fix the bug with it as the
