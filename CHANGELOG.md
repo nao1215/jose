@@ -15,6 +15,8 @@ and per-release binaries and notes are published from git tags by GoReleaser.
 
 - On Windows, `jose bug-report` opens the issue page in the default browser through rundll32 instead of `cmd /C start msedge`, so cmd.exe no longer parses the URL.
 - CI scans the repository with gosec and Trivy on every pull request (Trivy covers dependency vulnerabilities, committed secrets and misconfigurations, and also runs daily). Workflow actions are recorded in `.github/workflows/actions.lock`, which CI verifies against the pinned commits.
+- CI scans pull requests and pushes to main for committed secrets with gitleaks. The Linux, macOS and Windows unit test workflows are one `unit_test.yml` matrix, which now runs the race detector on Linux too. CI pins atago v0.26.3 and himorime v0.6.1.
+- Dependencies: charmbracelet/x/ansi v0.11.10, xo/terminfo v1.3.1.
 
 ## [0.4.3] - 2026-11-09
 
