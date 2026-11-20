@@ -70,10 +70,9 @@ jose jwk generate --type EC --curve P-256 --kid key-1 --alg ES256 --use sig --ou
 jose jwk public --set key.jwk
 ```
 
-Those two commands are also what a Bluesky / AT Protocol OAuth confidential
-client needs for `private_key_jwt`. The cookbook recipe
-[atproto OAuth: keys for a confidential client](https://nao1215.github.io/jose/cookbook/#atproto-oauth-keys-for-a-confidential-client)
-covers the client metadata, a hand-signed client assertion, and key rotation.
+A Bluesky / AT Protocol OAuth confidential client needs exactly this for
+`private_key_jwt`; see the
+[atproto OAuth recipe](https://nao1215.github.io/jose/cookbook/#atproto-oauth-keys-for-a-confidential-client).
 
 ## What jose does
 
@@ -91,10 +90,10 @@ Results go to standard output or `--output`, and errors go to standard error
 with exit status 1. The
 [reference](https://nao1215.github.io/jose/reference/) lists every flag.
 
-Apart from the install commands and the website's install page, the end-to-end suite ([atago](https://github.com/nao1215/atago)
-specs under `e2e/atago/`) runs every shell block in this README, on the website,
-and in the cookbook word for word, and `internal/cmd/docs_test.go` fails when a
-block is left out.
+The end-to-end suite ([atago](https://github.com/nao1215/atago) specs under
+`e2e/atago/`) runs every shell block in this README, the website, and the
+cookbook, except the install commands. `internal/cmd/docs_test.go` fails when
+a block is left out.
 
 ## Testing
 

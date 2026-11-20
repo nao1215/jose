@@ -1,9 +1,8 @@
 # Cookbook
 
-Copyable jose recipes, indexed by task. Every recipe runs as shown: the shell
-blocks on this page are executed word for word by the end-to-end suite
-(`e2e/atago/cookbook.atago.yaml`), so a command you copy from here is one that
-worked on the last commit.
+jose recipes, indexed by task. The end-to-end suite
+(`e2e/atago/cookbook.atago.yaml`) runs every shell block on this page on each
+commit.
 
 The recipes are written for a POSIX shell (bash, zsh). On Windows, run them in
 Git Bash or WSL. A few recipes also call `openssl` to show interoperability or

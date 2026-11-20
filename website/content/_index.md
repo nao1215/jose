@@ -39,12 +39,10 @@ with the `kid` and `alg` a verifier needs to pick the right key.
 
 ## Keys for an atproto OAuth client
 
-A Bluesky / AT Protocol OAuth client that runs on a server authenticates with
-`private_key_jwt`, which needs an ES256 key with a `kid` and a published JWKS.
-That is these two commands; the
+A Bluesky / AT Protocol OAuth client on a server authenticates with
+`private_key_jwt`, which needs the ES256 key and JWKS made above. The
 [cookbook recipe](/cookbook/#atproto-oauth-keys-for-a-confidential-client)
-walks through the client metadata, a hand-signed client assertion, and key
-rotation.
+adds the client metadata, a client assertion, and key rotation.
 
 ## What jose does
 
@@ -59,10 +57,8 @@ rotation.
 | List the algorithm names jose accepts | `jose jwa` |
 
 Every command reads files, standard input, or a pipe, and writes to standard
-output or a file, so it works in scripts and CI. The [cookbook](/cookbook/)
-has a recipe for each task, and every shell block in it is run by the
-end-to-end suite on each commit. The [reference](/reference/) lists every
-command and flag.
+output or a file. The [cookbook](/cookbook/) has a recipe for each task, tested
+on each commit, and the [reference](/reference/) lists every flag.
 
 ## Install
 
