@@ -92,7 +92,7 @@ with exit status 1. The
 
 The end-to-end suite ([atago](https://github.com/nao1215/atago) specs under
 `e2e/atago/`) runs every shell block in this README, the website, and the
-cookbook, except the install commands. `internal/cmd/docs_test.go` fails when
+cookbook, except the install commands and the website's install page. `internal/cmd/docs_test.go` fails when
 a block is left out.
 
 ## Testing

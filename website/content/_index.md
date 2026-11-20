@@ -58,7 +58,7 @@ adds the client metadata, a client assertion, and key rotation.
 
 Every command reads files, standard input, or a pipe, and writes to standard
 output or a file. The [cookbook](/cookbook/) has a recipe for each task, tested
-on each commit, and the [reference](/reference/) lists every flag.
+in CI, and the [reference](/reference/) lists every flag.
 
 ## Install
 
