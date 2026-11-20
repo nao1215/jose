@@ -20,8 +20,7 @@
 
 jose is a command line tool for JSON Object Signing and Encryption (JOSE). It
 generates keys (JWK), publishes key sets (JWKS), signs and verifies messages
-(JWS), and encrypts and decrypts messages (JWE) from the shell, so you can work
-with JOSE without writing a program. It is built on
+(JWS), and encrypts and decrypts messages (JWE) from the shell. It is built on
 [github.com/lestrrat-go/jwx](https://github.com/lestrrat-go/jwx) (MIT license,
 by lestrrat).
 
@@ -59,7 +58,7 @@ echo '{"sub":"alice"}' | jose jws sign --algorithm ES256 --key ec.jwk > token.jw
 jose jws verify --algorithm ES256 --key ec.jwk token.jws
 ```
 
-Every command that reads a message or a key file also reads a pipe, and
+Every command that reads a message or a key file also takes `-` or a pipe, and
 `jws parse` and `jws verify` take a token inline:
 
 ![pipe](./doc/img/pipe.gif)
@@ -88,14 +87,14 @@ covers the client metadata, a hand-signed client assertion, and key rotation.
 | Encrypt and decrypt | `jose jwe encrypt`, `jose jwe decrypt` |
 | List the algorithm names jose accepts | `jose jwa` |
 
-Every command that reads a message or a key file takes a file, `-`, or a pipe.
 Results go to standard output or `--output`, and errors go to standard error
 with exit status 1. The
 [reference](https://nao1215.github.io/jose/reference/) lists every flag.
 
-The shell blocks in this README, on the website, and in the cookbook, apart
-from the install commands, are run word for word by the end-to-end suite ([atago](https://github.com/nao1215/atago)
-specs under `e2e/atago/`), and `internal/cmd/docs_test.go` fails when a block is not.
+Apart from the install commands, the end-to-end suite ([atago](https://github.com/nao1215/atago)
+specs under `e2e/atago/`) runs every shell block in this README, on the website,
+and in the cookbook word for word, and `internal/cmd/docs_test.go` fails when a
+block is left out.
 
 ## Testing
 
@@ -115,11 +114,11 @@ The commands and CI jobs for each are in [doc/testing.md](doc/testing.md).
 
 ## Contributing
 
-Contributions are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the
+Contributions are welcome. [CONTRIBUTING.md](./CONTRIBUTING.md) has the
 development setup and the local commands that mirror CI (`make test`,
-`make e2e`, `make test-fuzz`, `make lint`, `make website`). Security reports are
-described in [SECURITY.md](./SECURITY.md), and notable changes are tracked in
-[CHANGELOG.md](./CHANGELOG.md).
+`make e2e`, `make test-fuzz`, `make lint`, `make website`). See
+[SECURITY.md](./SECURITY.md) for security reports and
+[CHANGELOG.md](./CHANGELOG.md) for changes.
 
 A GitHub Star motivates continued development.
 
