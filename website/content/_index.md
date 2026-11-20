@@ -4,8 +4,7 @@ title: jose
 
 jose is a command line tool for JSON Object Signing and Encryption (JOSE). It
 generates keys (JWK), publishes key sets (JWKS), signs and verifies messages
-(JWS), and encrypts and decrypts messages (JWE), so you can work with JOSE
-without writing a program.
+(JWS), and encrypts and decrypts messages (JWE) from the shell.
 
 ![jose generating a key, signing a payload, and verifying it](/img/demo.gif)
 
@@ -60,7 +59,7 @@ rotation.
 | List the algorithm names jose accepts | `jose jwa` |
 
 Every command reads files, standard input, or a pipe, and writes to standard
-output or a file, so jose fits in scripts and CI. The [cookbook](/cookbook/)
+output or a file, so it works in scripts and CI. The [cookbook](/cookbook/)
 has a recipe for each task, and every shell block in it is run by the
 end-to-end suite on each commit. The [reference](/reference/) lists every
 command and flag.
