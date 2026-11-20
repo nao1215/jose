@@ -91,7 +91,7 @@ Results go to standard output or `--output`, and errors go to standard error
 with exit status 1. The
 [reference](https://nao1215.github.io/jose/reference/) lists every flag.
 
-Apart from the install commands, the end-to-end suite ([atago](https://github.com/nao1215/atago)
+Apart from the install commands and the website's install page, the end-to-end suite ([atago](https://github.com/nao1215/atago)
 specs under `e2e/atago/`) runs every shell block in this README, on the website,
 and in the cookbook word for word, and `internal/cmd/docs_test.go` fails when a
 block is left out.
